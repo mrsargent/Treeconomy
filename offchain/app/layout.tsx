@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Container, Theme } from "@radix-ui/themes";
+import NavBar from "./components/NavBar";
+import { Inter } from 'next/font/google';
+import './theme-config.css';
+import '@radix-ui/themes/styles.css';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -12,6 +17,13 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -26,9 +38,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={inter.variable}//{`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Theme appearance="light" accentColor="green">
+            <NavBar />
+            <main className="p-5">
+              <Container>{children}</Container>
+            </main>
+        </Theme>
+        
       </body>
     </html>
   );
