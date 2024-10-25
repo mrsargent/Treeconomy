@@ -2,7 +2,6 @@
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import WalletModal from "./WalletModal";
-import { Button } from "@radix-ui/themes";
 
 const WalletConnect2 = () => {
   const network =
@@ -24,7 +23,7 @@ const WalletConnect2 = () => {
           </h1>        
           <h1>{accountBalance}</h1>
          
-          <Button
+          <button
             className="btn btn-square btn-outline"
             onClick={() => {
               disconnect();
@@ -44,7 +43,7 @@ const WalletConnect2 = () => {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </Button>
+          </button>
         </div>
       ) : (
         <></>

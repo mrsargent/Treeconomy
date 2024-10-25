@@ -1,22 +1,19 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { Container, Theme } from "@radix-ui/themes";
-import NavBar from "./components/NavBar";
 import { Inter } from 'next/font/google';
 import './theme-config.css';
-import '@radix-ui/themes/styles.css';
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+// const geistSans = localFont({
+//   src: "./fonts/GeistVF.woff",
+//   variable: "--font-geist-sans",
+//   weight: "100 900",
+// });
+// const geistMono = localFont({
+//   src: "./fonts/GeistMonoVF.woff",
+//   variable: "--font-geist-mono",
+//   weight: "100 900",
+// });
 
 const inter = Inter({
   subsets: ['latin'],
@@ -36,16 +33,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="lemonade">
       <body
         className={inter.variable}//{`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Theme appearance="light" accentColor="green">
-            <NavBar />
+        
+         
             <main className="p-5">
-              <Container>{children}</Container>
+              {children}
             </main>
-        </Theme>
+        
         
       </body>
     </html>
