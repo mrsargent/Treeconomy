@@ -3,12 +3,13 @@ use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
 use aiken/interval.{Finite}
 use aiken/primitive/bytearray
-use cardano/address.{Address, from_verification_key}
+use cardano/address.{from_verification_key}
 use cardano/assets.{
   AssetName, PolicyId, Value, flatten, lovelace_of, merge, quantity_of, zero,
 }
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, ValidityRange,
+  find_script_outputs,
 }
 use types.{POSIXtime}
 
@@ -27,19 +28,6 @@ pub fn must_be_signed_by(
   vk: VerificationKeyHash,
 ) -> Bool {
   list.has(transaction.extra_signatories, vk)
-}
-
-pub fn create_address(
-  pkh: VerificationKeyHash,
-  sc: VerificationKeyHash,
-) -> Address {
-  // empty bytearrays means dont add the sc to the pkh
-  if bytearray.is_empty(sc) {
-    address.from_verification_key(pkh)
-  } else {
-    address.from_verification_key(pkh)
-      |> address.with_delegation_key(sc)
-  }
 }
 
 //get all the value of the inputs as an int 
@@ -91,33 +79,28 @@ pub fn value_paid_to(
 }
 
 // // Get input from the script.
-// pub fn find_own_input(ctx: ScriptContext) -> Input {
-//   let ScriptContext { transaction, purpose } = ctx
-//   let Transaction { inputs, .. } = transaction
+pub fn find_own_input(out_ref: OutputReference, self: Transaction) -> Input {
+  let Transaction { inputs, .. } = self
 
-//   //expect that it is a spend purpose with an out_ref
-//   expect Spend(out_ref) = purpose
+  //expect and input from the out_ref.
+  expect Some(input) =
+    inputs
+      |> transaction.find_input(out_ref)
 
-//   //expect and input from the out_ref.
-//   expect Some(input) =
-//     inputs
-//       |> transaction.find_input(out_ref)
-
-//   input
-// }
+  input
+}
 
 // // Get outputs to the script.
-// pub fn find_own_outputs(ctx: ScriptContext) -> List<Output> {
-//   let ScriptContext { transaction, purpose } = ctx
-//   let Transaction { outputs, .. } = transaction
+pub fn find_own_outputs(
+  out_ref: OutputReference,
+  self: Transaction,
+) -> List<Output> {
+  let Transaction { outputs, .. } = self
 
-//   //expect that it is a spend purpose with an out_ref
-//   expect Spend(out_ref) = purpose
-
-//   //find the output based on the hash of the transaciton id hash
-//   let own_outputs = outputs |> find_script_outputs(out_ref.transaction_id.hash)
-//   own_outputs
-// }
+  //find the output based on the hash of the transaciton id hash
+  let own_outputs = outputs |> find_script_outputs(out_ref.transaction_id)
+  own_outputs
+}
 
 // Get all outputs value.
 pub fn outputs_value(outputs: List<Output>) -> Value {

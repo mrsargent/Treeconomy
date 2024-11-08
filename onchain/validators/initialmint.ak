@@ -1,25 +1,30 @@
+use aiken/cbor.{serialise}
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
+use aiken/crypto.{VerificationKeyHash, sha2_256}
 use cardano/assets.{PolicyId, tokens}
 use cardano/transaction.{Input, OutputReference, Transaction}
 use utils
 
-validator init_mint_nft(owner: VerificationKeyHash, utxo_ref: OutputReference) {
-  mint(_redeemer: Int, policy_id: PolicyId, self: Transaction) {
+validator init_mint_nft(owner: VerificationKeyHash) {
+  mint(redeemer: OutputReference, policy_id: PolicyId, self: Transaction) {
     let signed_by_program = utils.must_be_signed_by(self, owner)
 
     let Transaction { inputs, mint, .. } = self
-    let is_output_consumed =
-      list.any(inputs, fn(input) { input.output_reference == utxo_ref })
 
-    expect [Pair(_, qty)] =
+    expect Some(_input) =
+      list.find(inputs, fn(input) { input.output_reference == redeemer })
+
+    expect [Pair(an, qty)] =
       mint
         |> tokens(policy_id)
         |> dict.to_pairs()
+
     let qty_correct = qty == 1
 
-    signed_by_program && qty_correct && is_output_consumed
+    let correct_asset_name = an == sha2_256(serialise(redeemer))
+
+    signed_by_program && qty_correct && correct_asset_name
   }
 
   else(_) {

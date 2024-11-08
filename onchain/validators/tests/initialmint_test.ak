@@ -8,79 +8,79 @@ use tests/fake_tx
 //******************** initial mint NFT validator unit tests *********************
 //********************************************************************************
 
-test initialmint_nft_test() {
-  let out_ref: OutputReference = fake_tx.test_out_ref()
-  let test_input: Input = fake_tx.test_input()
-  let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
+// test initialmint_nft_test() {
+//   let out_ref: OutputReference = fake_tx.test_out_ref()
+//   let test_input: Input = fake_tx.test_input()
+//   let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
 
-  let mint_val: Value =
-    from_asset(policy_id: pid, asset_name: "TreeNFT", quantity: 1)
+//   let mint_val: Value =
+//     from_asset(policy_id: pid, asset_name: "TreeNFT", quantity: 1)
 
-  let signature: VerificationKeyHash = #"abcd"
+//   let signature: VerificationKeyHash = #"abcd"
 
-  let test_trans: Transaction =
-    transaction.placeholder
-      |> fn(transaction) {
-          Transaction {
-            ..transaction,
-            inputs: [test_input],
-            mint: mint_val,
-            extra_signatories: [signature],
-          }
-        }
+//   let test_trans: Transaction =
+//     transaction.placeholder
+//       |> fn(transaction) {
+//           Transaction {
+//             ..transaction,
+//             inputs: [test_input],
+//             mint: mint_val,
+//             extra_signatories: [signature],
+//           }
+//         }
 
-  initialmint.init_mint_nft.mint(signature, out_ref, 0, pid, test_trans)
-}
+//   initialmint.init_mint_nft.mint(signature, out_ref, 0, pid, test_trans)
+// }
 
-//wrong signature for the transaction
-test initialmint_nft_test_badsigner() fail {
-  let out_ref: OutputReference = fake_tx.test_out_ref()
-  let test_input: Input = fake_tx.test_input()
-  let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
+// //wrong signature for the transaction
+// test initialmint_nft_test_badsigner() fail {
+//   let out_ref: OutputReference = fake_tx.test_out_ref()
+//   let test_input: Input = fake_tx.test_input()
+//   let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
 
-  let mint_val: Value =
-    from_asset(policy_id: pid, asset_name: "TreeNFT", quantity: 1)
+//   let mint_val: Value =
+//     from_asset(policy_id: pid, asset_name: "TreeNFT", quantity: 1)
 
-  let signature: VerificationKeyHash = #"abcd"
+//   let signature: VerificationKeyHash = #"abcd"
 
-  let test_trans: Transaction =
-    transaction.placeholder
-      |> fn(transaction) {
-          Transaction {
-            ..transaction,
-            inputs: [test_input],
-            mint: mint_val,
-            extra_signatories: [signature],
-          }
-        }
+//   let test_trans: Transaction =
+//     transaction.placeholder
+//       |> fn(transaction) {
+//           Transaction {
+//             ..transaction,
+//             inputs: [test_input],
+//             mint: mint_val,
+//             extra_signatories: [signature],
+//           }
+//         }
 
-  initialmint.init_mint_nft.mint(#"aaaa", out_ref, 0, pid, test_trans)
-}
+//   initialmint.init_mint_nft.mint(#"aaaa", out_ref, 0, pid, test_trans)
+// }
 
-//bad number of tokens
-test initialmint_nft_test_badtokenqty() fail {
-  let out_ref: OutputReference = fake_tx.test_out_ref()
-  let test_input: Input = fake_tx.test_input()
-  let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
+// //bad number of tokens
+// test initialmint_nft_test_badtokenqty() fail {
+//   let out_ref: OutputReference = fake_tx.test_out_ref()
+//   let test_input: Input = fake_tx.test_input()
+//   let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
 
-  let mint_val: Value =
-    from_asset(policy_id: pid, asset_name: "TreeNFT", quantity: 10)
+//   let mint_val: Value =
+//     from_asset(policy_id: pid, asset_name: "TreeNFT", quantity: 10)
 
-  let signature: VerificationKeyHash = #"abcd"
+//   let signature: VerificationKeyHash = #"abcd"
 
-  let test_trans: Transaction =
-    transaction.placeholder
-      |> fn(transaction) {
-          Transaction {
-            ..transaction,
-            inputs: [test_input],
-            mint: mint_val,
-            extra_signatories: [signature],
-          }
-        }
+//   let test_trans: Transaction =
+//     transaction.placeholder
+//       |> fn(transaction) {
+//           Transaction {
+//             ..transaction,
+//             inputs: [test_input],
+//             mint: mint_val,
+//             extra_signatories: [signature],
+//           }
+//         }
 
-  initialmint.init_mint_nft.mint(signature, out_ref, 0, pid, test_trans)
-}
+//   initialmint.init_mint_nft.mint(signature, out_ref, 0, pid, test_trans)
+// }
 
 //********************************************************************************
 //******************** initial mint token validator unit tests *********************

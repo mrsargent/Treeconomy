@@ -11,7 +11,7 @@
   "dependencies": {
     "@cardano-foundation/cardano-connect-with-wallet": "^0.2.9",
     "@cardano-foundation/cardano-connect-with-wallet-core": "^0.2.5",
-    "@lucid-evolution/lucid": "^0.3.51",
+    "@lucid-evolution/lucid": "^0.4.0",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/themes": "^3.1.4",
     "axios": "^1.7.7",
