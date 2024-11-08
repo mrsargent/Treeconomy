@@ -10,10 +10,10 @@ const nextConfig: NextConfig = {
       topLevelAwait: true,
       layers: true
     };
-    config.module.rules.push({
-      test: /\.wasm$/,
-      type: 'webassembly/async',
-    });
+    // config.module.rules.push({
+    //   test: /\.wasm$/,
+    //   type: 'webassembly/async',
+    // });
     return config
   },
     env:{
