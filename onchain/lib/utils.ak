@@ -133,3 +133,13 @@ pub fn must_complete_before(
     _ -> False
   }
 }
+
+pub fn time_remaining_before_dealine(
+  range: ValidityRange,
+  lock_expiration_time: POSIXtime,
+) -> POSIXtime {
+  when range.upper_bound.bound_type is {
+    Finite(tx_latest_time) -> lock_expiration_time - tx_latest_time
+    _ -> fail
+  }
+}
