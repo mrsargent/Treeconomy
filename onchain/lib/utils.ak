@@ -2,6 +2,7 @@ use aiken/builtin
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
 use aiken/interval.{Finite}
+use aiken/math/rational.{ceil, from_int}
 use aiken/primitive/bytearray
 use cardano/address.{from_verification_key}
 use cardano/assets.{
@@ -142,4 +143,18 @@ pub fn time_remaining_before_dealine(
     Finite(tx_latest_time) -> lock_expiration_time - tx_latest_time
     _ -> fail
   }
+}
+
+pub fn divide_ceil_int(num1: Int, num2: Int) -> Int {
+  expect Some(temp_div) = rational.div(from_int(num1), from_int(num2))
+
+  ceil(temp_div)
+}
+
+test test_divide1() {
+  divide_ceil_int(5, 2) == 3
+}
+
+test test_divide2() fail {
+  divide_ceil_int(5, 2) == 2
 }

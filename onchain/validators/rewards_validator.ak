@@ -1,10 +1,13 @@
 use aiken/collection/list
-use aiken/math/rational.{ceil, from_int}
 use cardano/address.{VerificationKey}
 use cardano/assets.{quantity_of}
 use cardano/transaction.{Output, OutputReference, Transaction}
 use types.{FullUnlock, PartialUnlock, Rewards_Datum, Rewards_Redeemer}
-use utils.{find_own_input, must_be_signed_by, time_remaining_before_dealine}
+use utils.{
+  divide_ceil_int, find_own_input, must_be_signed_by, must_start_after,
+  time_remaining_before_dealine,
+}
+use validation/count.{inputs_by_vkh}
 
 validator rewards_validator {
   spend(
@@ -40,10 +43,6 @@ fn validate_partial_unlock(
     totalInstallments,
   }) = datum
 
-  //asert there is a vkh and the signature of the transaction and the beneficiary match
-  expect VerificationKey(vkh) = beneficiary.payment_credential
-  let correct_signature = must_be_signed_by(self, vkh)
-
   //find input based on the outref and deconstruct
   let own_vesting_input = find_own_input(own_ref, self)
 
@@ -60,7 +59,7 @@ fn validate_partial_unlock(
       vestingAsset.policyid,
       vestingAsset.tokenName,
     )
-  let old_remain_qty =
+  let new_remain_qty =
     quantity_of(
       own_vesting_output.value,
       vestingAsset.policyid,
@@ -73,20 +72,64 @@ fn validate_partial_unlock(
 
   let time_between_installments = vesting_period_length / totalInstallments
 
-  expect Some(temp_div) =
-    rational.div(
-      from_int(vesting_time_remaining),
-      from_int(time_between_installments),
-    )
-  let future_installments = ceil(temp_div)
+  let future_installments =
+    divide_ceil_int(vesting_time_remaining, time_between_installments)
 
-  True
+  let expcted_qty_remaining =
+    divide_ceil_int(future_installments * totalVestingQty, totalInstallments)
+
+  //asert there is a vkh and the signature of the transaction and the beneficiary match
+  expect VerificationKey(vkh) = beneficiary.payment_credential
+  let correct_signature = must_be_signed_by(self, vkh)
+
+  //unlock not permitted until firstUnlockPossible 
+  let first_unlock_possible =
+    must_start_after(validity_range, firstUnlockPossibleAfter)
+
+  //zero remaining assets not allowed
+  let assets_remain = new_remain_qty > 0
+
+  //new assets less the old
+  let remaining_assets_less = new_remain_qty < old_remain_qty
+
+  //expected assets the same as expected
+  let expected_asset_check = expcted_qty_remaining == new_remain_qty
+
+  //datum is equivalent
+  let datum_equivalent =
+    own_vesting_input.output.datum == own_vesting_output.datum
+
+  //double satisfaction check that there is only 1 script input
+  let only_one_script_input = inputs_by_vkh(inputs, 1)
+
+  and {
+    correct_signature,
+    first_unlock_possible,
+    assets_remain,
+    remaining_assets_less,
+    expected_asset_check,
+    datum_equivalent,
+    only_one_script_input,
+  }
 }
 
 fn validate_full_unlock(
-  _datum: Option<Rewards_Datum>,
+  datum: Option<Rewards_Datum>,
   _own_ref: OutputReference,
-  _self: Transaction,
+  self: Transaction,
 ) -> Bool {
-  False
+  expect Some(Rewards_Datum { beneficiary, vestingPeriodEnd, .. }) = datum
+
+  //asert there is a vkh and the signature of the transaction and the beneficiary match
+  expect VerificationKey(vkh) = beneficiary.payment_credential
+  let correct_signature = must_be_signed_by(self, vkh)
+
+  //full unlock not permitted until vesting period end time 
+  let full_unlock_possible =
+    must_start_after(self.validity_range, vestingPeriodEnd)
+
+  and {
+    correct_signature,
+    full_unlock_possible,
+  }
 }
