@@ -71,13 +71,10 @@ fn validate_partial_unlock(
     time_remaining_before_dealine(validity_range, vestingPeriodEnd)
 
   let time_between_installments = vesting_period_length / totalInstallments
-
   let future_installments =
     divide_ceil_int(vesting_time_remaining, time_between_installments)
-
   let expcted_qty_remaining =
     divide_ceil_int(future_installments * totalVestingQty, totalInstallments)
-
   //asert there is a vkh and the signature of the transaction and the beneficiary match
   expect VerificationKey(vkh) = beneficiary.payment_credential
   let correct_signature = must_be_signed_by(self, vkh)
@@ -103,13 +100,13 @@ fn validate_partial_unlock(
   let only_one_script_input = inputs_by_vkh(inputs, 1)
 
   and {
-    correct_signature,
-    first_unlock_possible,
-    assets_remain,
-    remaining_assets_less,
-    expected_asset_check,
-    datum_equivalent,
-    only_one_script_input,
+    correct_signature?,
+    first_unlock_possible?,
+    assets_remain?,
+    remaining_assets_less?,
+    expected_asset_check?,
+    datum_equivalent?,
+    only_one_script_input?,
   }
 }
 
@@ -129,7 +126,7 @@ fn validate_full_unlock(
     must_start_after(self.validity_range, vestingPeriodEnd)
 
   and {
-    correct_signature,
-    full_unlock_possible,
+    correct_signature?,
+    full_unlock_possible?,
   }
 }
