@@ -53,12 +53,15 @@ fn validate_partial_unlock(
       fn(output) { output.address == own_vesting_input.output.address },
     )
 
+  //find qty of token in input (before)
   let old_remain_qty =
     quantity_of(
       own_vesting_input.output.value,
       vestingAsset.policyid,
       vestingAsset.tokenName,
     )
+
+  //find qty of token in output (after)
   let new_remain_qty =
     quantity_of(
       own_vesting_output.value,
@@ -67,12 +70,14 @@ fn validate_partial_unlock(
     )
 
   let vesting_period_length = vestingPeriodEnd - vestingPeriodStart
+
   let vesting_time_remaining =
     time_remaining_before_dealine(validity_range, vestingPeriodEnd)
 
   let time_between_installments = vesting_period_length / totalInstallments
   let future_installments =
     divide_ceil_int(vesting_time_remaining, time_between_installments)
+
   let expcted_qty_remaining =
     divide_ceil_int(future_installments * totalVestingQty, totalInstallments)
   //asert there is a vkh and the signature of the transaction and the beneficiary match
