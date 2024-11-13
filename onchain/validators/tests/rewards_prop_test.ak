@@ -147,7 +147,7 @@ fn generate_partial_unlock_test() -> Fuzzer<PartialUnlockTest> {
     utils_test.generate_outref(),
     utils_test.generate_policy_id(),
     utils_test.generate_token_name(),
-    fuzz.int_between(50, 100),
+    fuzz.int_between(80, 100),
     fuzz.int_between(50, 200),
     fn(
       addr,

@@ -6,7 +6,7 @@ use initialmint
 use tests/fake_tx
 
 //********************************************************************************
-//******************** initial mint NFT validator unit tests *********************
+//******************** initial mint NFT minting policy unit tests ****************
 //********************************************************************************
 
 test initialmint_nft_test() {
@@ -126,7 +126,7 @@ test initialmint_nft_test_wrong_an() fail {
 }
 
 //********************************************************************************
-//******************** initial mint token validator unit tests *********************
+//******************** initial mint token minting polciy unit tests **************
 //********************************************************************************
 
 test initialmint_token_test() {
