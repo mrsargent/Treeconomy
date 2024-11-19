@@ -43,7 +43,7 @@ export default async function handler(
       
       const nativeMint = mkMintinPolicy(address);
       const nativePolicyId = mintingPolicyToId(nativeMint);
-    //!!!!!!!!!! ask jonathon on how to use the metadata function for CIP25 */
+    
       const tx = await lucid
         .newTx()
         .pay.ToAddress(address, {

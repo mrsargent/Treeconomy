@@ -1,5 +1,12 @@
 import { fromUnit, LucidEvolution, RewardAddress, UTxO } from "@lucid-evolution/lucid"
 
+export type InitialMintConfig = {   
+  TokenName: string;
+  address: string;
+  compiledCodeNFT: string;
+  compiledCodeToken: string;
+};
+
 
 export type NFTMinterConfig = {   
     TokenName: string;
