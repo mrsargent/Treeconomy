@@ -82,7 +82,7 @@ const Delegate = async () => {
         if (param === "Mint") {
           console.log("Im in mint");
           const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };
-          response = await fetch("/api/mintInitialSeed", {
+          response = await fetch("/api/mintinitialseed", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

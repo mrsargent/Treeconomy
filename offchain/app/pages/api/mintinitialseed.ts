@@ -1,7 +1,8 @@
-import { Blockfrost, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, scriptFromNative, Validator } from "@lucid-evolution/lucid";
+import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, scriptFromNative, UTxO, Validator, Data } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { InitialMintConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./getFirstUtxo";
+import { sha256 } from '@noble/hashes/sha2';
 
 export default async function handler(
   req: NextApiRequest,
@@ -36,11 +37,22 @@ export default async function handler(
       script: compiledCodeNFT,
     };
 
-    const goodUtxo = getFirstUxtoWithAda(lucid,address);
+    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
 
+    if (goodUtxo !== undefined) {
+      const d = Data.to(goodUtxo.txHash);
+      const encodedUtxo = sha256(fromHex(d));
+    }
+    else {
+      res.status(400);
+    }
 
     const nativePolicyId = mintingPolicyToId(mintingpolicy);
 
+
+    //don't fucking worry... just for testing.  
+    // I want to see the console.log prints from my getFirstUxtowithAda function to make sure I'm getting the 
+    // right data.  hence the reponse with error 400.
     res.status(400);
 
     // const tx = await lucid
