@@ -31,6 +31,6 @@ export const getFirstUxtoWithAda = async (lucid: LucidEvolution, addr: Address):
 
   });
 
-  return allUserContractUtxos; // ? allUserContractUtxos : null;
+  return allUserContractUtxos; 
 
 }

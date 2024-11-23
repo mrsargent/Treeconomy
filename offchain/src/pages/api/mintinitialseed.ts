@@ -39,6 +39,7 @@ export default async function handler(
 
     const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
 
+    console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
     if (goodUtxo !== undefined) {
       const d = Data.to(goodUtxo.txHash);
       const encodedUtxo = sha256(fromHex(d));
