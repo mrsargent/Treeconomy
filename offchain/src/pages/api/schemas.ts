@@ -79,33 +79,8 @@ export function fromAddress(address: Address): AddressObject {
 }
 
 
-// export function toAddress(paymentCredentialHash: string, stakeCredentialHash: string ): AddressObject {
-//   return {
-//     paymentCredential:
-//       paymentCredential?.type === "Key"
-//         ? {
-//             PublicKeyCredential: [paymentCredentialHash],
-//           }
-//         : { ScriptCredential: [paymentCredentialHash] },
-//     stakeCredential: stakeCredential
-//       ? {
-//           Inline: [
-//             stakeCredential.type === "Key"
-//               ? {
-//                   PublicKeyCredential: [stakeCredentialHash],
-//                 }
-//               : { ScriptCredential: [stakeCredentialHash] },
-//           ],
-//         }
-//       : null,
-//   };
-// }
-
-
 const OutputReferenceSchema = Data.Object({
-  transaction_id: Data.Object({ 
-    hash: Data.Bytes()
-  }),
+  transaction_id: Data.Bytes(),
   output_index: Data.Integer()
 });
 

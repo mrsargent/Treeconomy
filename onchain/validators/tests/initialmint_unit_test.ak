@@ -1,7 +1,12 @@
+use aiken/builtin
 use aiken/cbor.{serialise}
 use aiken/crypto.{VerificationKeyHash, sha2_256}
+use aiken/primitive/bytearray
+use cardano/addresses
 use cardano/assets.{Value, from_asset}
-use cardano/transaction.{Input, OutputReference, Transaction}
+use cardano/transaction.{
+  InlineDatum, Input, Output, OutputReference, Transaction,
+}
 use initialmint
 use tests/fake_tx
 
@@ -10,18 +15,40 @@ use tests/fake_tx
 //********************************************************************************
 
 test initialmint_nft_test() {
-  let out_ref: OutputReference = fake_tx.test_out_ref()
-  let test_input: Input = fake_tx.test_input()
-  let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
+  let out_ref: OutputReference =
+    OutputReference {
+      transaction_id: #"a22f96558a34449692beffa2b74eeb93b2ce1f1d65bd878501d6c8ea3e428506",
+      output_index: 0,
+    }
+  let test_input: Input =
+    Input {
+      output_reference: OutputReference {
+        transaction_id: #"a22f96558a34449692beffa2b74eeb93b2ce1f1d65bd878501d6c8ea3e428506",
+        output_index: 0,
+      },
+      output: Output {
+        address: addresses.create_address(#"acab", #""),
+        value: assets.from_asset(#"acab", #"beef", 100),
+        datum: InlineDatum(#""),
+        reference_script: None,
+      },
+    }
+  let pid = #"a46d84ed60f637be2434536515a48a77ce83b6dc9c29c7a37788a93a"
+
+  let hashed_asset_name =
+    out_ref
+      |> builtin.serialise_data
+      |> builtin.sha2_256
 
   let mint_val: Value =
     from_asset(
       policy_id: pid,
-      asset_name: sha2_256(serialise(out_ref)),
+      asset_name: bytearray.take(hashed_asset_name, 16),
       quantity: 1,
     )
 
-  let signature: VerificationKeyHash = #"abcd"
+  let signature: VerificationKeyHash =
+    #"1b28519b5d79cb0c83a53bcc532177afc0500ebd68f6250be797128a"
 
   let test_trans: Transaction =
     transaction.placeholder

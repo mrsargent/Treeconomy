@@ -5,6 +5,7 @@ import { MarketRedeemerEnum, OutputReference } from "./schemas";
 import { queryNFT } from "./queryNFT";
 
 
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -40,7 +41,7 @@ export default async function handler(
     console.log(buyUtxo);  
     
     const myData: OutputReference  = {
-        transaction_id: {hash: buyUtxo[0].txHash },
+        transaction_id: buyUtxo[0].txHash ,
         output_index: BigInt(buyUtxo[0].outputIndex)
     };  
    

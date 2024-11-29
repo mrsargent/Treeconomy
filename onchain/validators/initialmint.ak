@@ -1,7 +1,9 @@
-use aiken/cbor.{serialise}
+use aiken/builtin
+use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash, sha2_256}
+use aiken/crypto.{Blake2b_224, Hash, VerificationKey, VerificationKeyHash}
+use aiken/primitive/bytearray
 use cardano/assets.{PolicyId, tokens}
 use cardano/transaction.{Input, OutputReference, Transaction}
 use utils
@@ -9,22 +11,30 @@ use utils
 validator init_mint_nft(owner: VerificationKeyHash) {
   mint(redeemer: OutputReference, policy_id: PolicyId, self: Transaction) {
     let signed_by_program = utils.must_be_signed_by(self, owner)
-
     let Transaction { inputs, mint, .. } = self
 
     expect Some(_input) =
       list.find(inputs, fn(input) { input.output_reference == redeemer })
-
     expect [Pair(an, qty)] =
       mint
         |> tokens(policy_id)
         |> dict.to_pairs()
-
     let qty_correct = qty == 1
 
-    let correct_asset_name = an == sha2_256(serialise(redeemer))
+    let serialized_redeemer =
+      redeemer
+        |> builtin.serialise_data
+        |> builtin.sha2_256
+    let serialized_redeemer1 = bytearray.take(serialized_redeemer, 16)
 
-    signed_by_program && qty_correct && correct_asset_name
+    trace cbor.diagnostic(serialized_redeemer1)
+
+    let correct_asset_name = an == serialized_redeemer1
+    and {
+      signed_by_program?,
+      qty_correct?,
+      correct_asset_name?,
+    }
   }
 
   else(_) {

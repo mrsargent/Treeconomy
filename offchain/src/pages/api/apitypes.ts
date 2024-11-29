@@ -80,6 +80,14 @@ export type NFTMinterConfig = {
     return false;     
   }
 
+  export const parse = (json: string) =>
+    JSON.parse(json, (key, value) =>
+      typeof value === "string" && /^\d+n$/.test(value)
+        ? BigInt(value.slice(0, -1))
+        : value
+    );
+  
+
   // export function serialzeAndHash(datum:any){
   //   const serializeData = JSON.stringify(datum);
   //   const encoder = new TextEncoder();
