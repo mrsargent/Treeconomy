@@ -1,11 +1,11 @@
-import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, scriptFromNative, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress } from "@lucid-evolution/lucid";
+import { Blockfrost, fromHex, fromText, Lucid, UTxO, Validator, Data, toHex, Constr, validatorToAddress, toUnit } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { AssetClass, InitialMintConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./getFirstUtxo";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
-import { fromAddress, OutputReference, RewardsDatum } from "./schemas";
-import { blake2b } from '@noble/hashes/blake2b';
+import { fromAddress, OutputReference, RewardsDatum, VestingRedeemer } from "./schemas";
+import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
 
 
 export default async function handler(
@@ -37,43 +37,7 @@ export default async function handler(
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
-    // *****************************************************************/
-    //*********  constructing NFT minting policy with params ***************/
-    //**************************************************************** */
-    const pkh = getAddressDetails(address).paymentCredential?.hash;
-    const pkh1 = paymentCredentialOf(address).hash;
-
-    console.log("pkh: ", pkh);
-    console.log("pkh1: ", pkh1);
-    const compiledNft = scripts.validators.find(
-      (v) => v.title === "initialmint.init_mint_nft.mint",
-    )?.compiledCode;
-
-    const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);
-
-    const mintingNFTpolicy: MintingPolicy = {
-      type: "PlutusV3",
-      script: applyDoubleCborEncoding(applied)
-    };
-
-    const mintingNFTPolicyId = mintingPolicyToId(mintingNFTpolicy);
-    console.log("policy id: ", mintingNFTPolicyId);
-
-    // *****************************************************************/
-    //*********  constructing token minting policy with params ***************/
-    //**************************************************************** */
-    const treeToken: string = "Treeconomy Token";
-    const compiledToken = scripts.validators.find(
-      (v) => v.title === "initialmint.init_mint_token.mint",
-    )?.compiledCode;
-
-    const mintingTokenpolicy: MintingPolicy = {
-      type: "PlutusV3",
-      script: applyParamsToScript(applyDoubleCborEncoding(compiledToken!), [pkh1, fromText(treeToken)])
-    };
-
-    const mintingTokenPolicyId = mintingPolicyToId(mintingTokenpolicy);
-    console.log("policy id: ", mintingTokenPolicyId);
+    
 
     // *****************************************************************/
     //*********  constructing validator with data ***************/
@@ -117,6 +81,68 @@ export default async function handler(
       }, RewardsDatum
     );
 
+     // *****************************************************************/
+    //*********  construct stuff ***************/
+    //**************************************************************** */
+    config.currentTime ??= Date.now();
+
+   
+  
+    const vestingUTXO = (await lucid.utxosByOutRef([config.vestingOutRef]))[0];
+  
+    if (!vestingUTXO)
+      return { type: "error", error: new Error("No Utxo in Script") };
+  
+    if (!vestingUTXO.datum)
+      return { type: "error", error: new Error("Missing Datum") };
+  
+    const datum = parseSafeDatum(vestingUTXO.datum, VestingDatum);
+    if (datum.type == "left")
+      return { type: "error", error: new Error(datum.value) };
+  
+    const vestingPeriodLength =
+      datum.value.vestingPeriodEnd - datum.value.vestingPeriodStart;
+  
+    const vestingTimeRemaining =
+      datum.value.vestingPeriodEnd - BigInt(config.currentTime);
+    // console.log("vestingTimeRemaining", vestingTimeRemaining);
+  
+    const timeBetweenTwoInstallments = divCeil(
+      BigInt(vestingPeriodLength),
+      datum.value.totalInstallments
+    );
+    // console.log("timeBetweenTwoInstallments", timeBetweenTwoInstallments);
+  
+    const futureInstallments = divCeil(
+      vestingTimeRemaining,
+      timeBetweenTwoInstallments
+    );
+    // console.log("futureInstallments", futureInstallments);
+  
+    const expectedRemainingQty = divCeil(
+      futureInstallments * datum.value.totalVestingQty,
+      datum.value.totalInstallments
+    );
+    // console.log("expectedRemainingQty", expectedRemainingQty);
+  
+    const vestingTokenUnit = datum.value.assetClass.symbol
+      ? toUnit(datum.value.assetClass.symbol, datum.value.assetClass.name)
+      : "lovelace";
+    // console.log("vestingTokenUnit", vestingTokenUnit)
+  
+    const vestingTokenAmount =
+      vestingTimeRemaining < 0n
+        ? vestingUTXO.assets[vestingTokenUnit]
+        : vestingUTXO.assets[vestingTokenUnit] - expectedRemainingQty;
+    // console.log("vestingTokenAmount", vestingTokenAmount);
+  
+    const beneficiaryAddress = toAddress(datum.value.beneficiary, network);
+  
+    const vestingRedeemer =
+      vestingTimeRemaining < 0n
+        ? Data.to("FullUnlock", VestingRedeemer)
+        : Data.to("PartialUnlock", VestingRedeemer);
+  
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
@@ -149,40 +175,12 @@ export default async function handler(
 
     // *****************************************************************/
     //*********  constructing transaction ******************************/
-    //** Note: Asset name is the serialized out_ref.  This will always
-    //* give the NFT a unique encoded name (i.e.  policyid + token name)*/
+    // redeem rewards
     //**************************************************************** */
     const tx = await lucid
       .newTx()
-      .collectFrom([goodUtxo])
-      .pay.ToAddress(address, {
-        [mintingNFTPolicyId + enc]: 1n,
-      })
-      .pay.ToAddressWithData(
-        contractAddr,
-        {
-          kind: "inline",
-          value: rewardsDatum,
-        },
-        { [mintingTokenPolicyId + fromText(treeToken)]: 10000n }
-      )
-      .mintAssets({
-        [mintingTokenPolicyId + fromText(treeToken)]: 10000n,
-      }, tokenRedeemer)
-      .mintAssets({
-        [mintingNFTPolicyId + enc]: 1n,
-      }, nftRedeemer)
-      .attach.MintingPolicy(mintingTokenpolicy)
-      .attach.MintingPolicy(mintingNFTpolicy)
-      .attachMetadata(721, {
-        [mintingNFTPolicyId]: {
-          [enc]: {
-            name: "Seed NFT 2",
-            image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-            description: "No: 1 Tree species: oak"
-          }
-        }
-      })
+      .collectFrom([goodUtxo])    
+      .attach.SpendingValidator(rewardsValidator)     
       .addSigner(address)
       .complete({ localUPLCEval: false })
 

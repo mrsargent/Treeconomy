@@ -31,8 +31,8 @@ const AddressSchema = Data.Object({
   stakeCredential: Data.Nullable(Data.Enum([InlineSchema, PointerSchema])),
 });
 
-type AddressObject = Data.Static<typeof AddressSchema>;
-const AddressObject = AddressSchema as unknown as AddressObject;
+export type AddressObject = Data.Static<typeof AddressSchema>;
+export const AddressObject = AddressSchema as unknown as AddressObject;
 
 const MarketRedeemerEnumSchema = Data.Enum([
   Data.Literal("Buy"),
@@ -98,3 +98,31 @@ const SimpleSaleSchemaZero = Data.Object({
 
 export type SimpleSaleDatumZero = Data.Static<typeof SimpleSaleSchemaZero>;
 export const SimpleSaleDatumZero = SimpleSaleSchemaZero as unknown as SimpleSaleDatumZero;
+
+
+const AssetClassSchema = Data.Object({
+  policyId: Data.Bytes(),
+  tokenName: Data.Bytes()
+});
+
+const RewardsSchema = Data.Object({
+  beneficiary: AddressSchema,
+  vestingAsset: AssetClassSchema,
+  totalVestingQty: Data.Integer(),
+  vestingPeriodStart: Data.Integer(),
+  vestingPeriodEnd: Data.Integer(),
+  firstUnlockPossibleAfter: Data.Integer(),
+  totalInstallments: Data.Integer()
+});
+
+export type RewardsDatum = Data.Static<typeof RewardsSchema>;
+export const RewardsDatum = RewardsSchema as unknown as RewardsDatum;
+
+
+export const VestingRedeemerSchema = Data.Enum([
+  Data.Literal("PartialUnlock"),
+  Data.Literal("FullUnlock"),
+]);
+export type VestingRedeemer = Data.Static<typeof VestingRedeemerSchema>;
+export const VestingRedeemer =
+  VestingRedeemerSchema as unknown as VestingRedeemer;

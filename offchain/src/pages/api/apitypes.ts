@@ -1,4 +1,24 @@
-import { fromUnit, LucidEvolution, RewardAddress, UTxO } from "@lucid-evolution/lucid"
+import { Address, fromUnit, LucidEvolution, RewardAddress, UTxO } from "@lucid-evolution/lucid"
+
+export type CborHex = string;
+export type RawHex = string;
+export type POSIXTime = number;
+
+export type AssetClass = {
+  policyId: string;
+  tokenName: string;
+}
+
+export type LockTokensConfig = {
+  beneficiary: Address;
+  vestingAsset: AssetClass;
+  totalVestingQty: number;
+  vestingPeriodStart: POSIXTime;
+  vestingPeriodEnd: POSIXTime;
+  firstUnlockPossibleAfter: POSIXTime;
+  totalInstallments: number;
+  
+};
 
 export type InitialMintConfig = {   
   TokenName: string;
@@ -87,6 +107,7 @@ export type NFTMinterConfig = {
         : value
     );
   
+
 
   // export function serialzeAndHash(datum:any){
   //   const serializeData = JSON.stringify(datum);
