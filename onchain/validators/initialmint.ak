@@ -8,9 +8,9 @@ use cardano/assets.{PolicyId, tokens}
 use cardano/transaction.{Input, OutputReference, Transaction}
 use utils
 
-validator init_mint_nft(owner: VerificationKeyHash) {
+validator init_mint_nft(owner: Hash<Blake2b_224, VerificationKey>) {
   mint(redeemer: OutputReference, policy_id: PolicyId, self: Transaction) {
-    let signed_by_program = utils.must_be_signed_by(self, owner)
+    let signed_by_program = list.has(self.extra_signatories, owner)
     let Transaction { inputs, mint, .. } = self
 
     expect Some(_input) =
@@ -26,7 +26,6 @@ validator init_mint_nft(owner: VerificationKeyHash) {
         |> builtin.serialise_data
         |> builtin.sha2_256
     let serialized_redeemer1 = bytearray.take(serialized_redeemer, 16)
-
     trace cbor.diagnostic(serialized_redeemer1)
 
     let correct_asset_name = an == serialized_redeemer1

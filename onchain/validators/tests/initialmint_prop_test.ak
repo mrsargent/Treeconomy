@@ -1,6 +1,7 @@
-use aiken/cbor.{serialise}
-use aiken/crypto.{VerificationKeyHash, sha2_256}
+use aiken/builtin
+use aiken/crypto.{VerificationKeyHash}
 use aiken/fuzz
+use aiken/primitive/bytearray
 use cardano/address.{Address, VerificationKey}
 use cardano/addresses
 use cardano/assets.{AssetName, PolicyId, Value, from_asset}
@@ -17,11 +18,15 @@ use tests/utils_test
 
 test initialmint_nft_test(param via generate_initial_mint_nft()) {
   let InitialNFTMintTest { addr, out_ref, inputs, pid } = param
+  let hashed_asset_name =
+    out_ref
+      |> builtin.serialise_data
+      |> builtin.sha2_256
 
   let mint_val: Value =
     from_asset(
       policy_id: pid,
-      asset_name: sha2_256(serialise(out_ref)),
+      asset_name: bytearray.take(hashed_asset_name, 16),
       quantity: 1,
     )
 

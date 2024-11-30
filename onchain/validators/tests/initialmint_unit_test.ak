@@ -1,6 +1,5 @@
 use aiken/builtin
-use aiken/cbor.{serialise}
-use aiken/crypto.{VerificationKeyHash, sha2_256}
+use aiken/crypto.{VerificationKeyHash}
 use aiken/primitive/bytearray
 use cardano/addresses
 use cardano/assets.{Value, from_asset}
@@ -70,10 +69,15 @@ test initialmint_nft_test_wrong_sig() fail {
   let test_input: Input = fake_tx.test_input()
   let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
 
+  let hashed_asset_name =
+    out_ref
+      |> builtin.serialise_data
+      |> builtin.sha2_256
+
   let mint_val: Value =
     from_asset(
       policy_id: pid,
-      asset_name: sha2_256(serialise(out_ref)),
+      asset_name: bytearray.take(hashed_asset_name, 16),
       quantity: 1,
     )
 
@@ -99,10 +103,15 @@ test initialmint_nft_test_wrong_qty() fail {
   let test_input: Input = fake_tx.test_input()
   let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
 
+  let hashed_asset_name =
+    out_ref
+      |> builtin.serialise_data
+      |> builtin.sha2_256
+
   let mint_val: Value =
     from_asset(
       policy_id: pid,
-      asset_name: sha2_256(serialise(out_ref)),
+      asset_name: bytearray.take(hashed_asset_name, 16),
       quantity: 10,
     )
 
@@ -129,10 +138,15 @@ test initialmint_nft_test_wrong_an() fail {
   let test_input: Input = fake_tx.test_input()
   let pid = #"0c3626175abe361b24728f3d80e2da26f21c0629cca89542c2935f37"
 
+  let hashed_asset_name =
+    out_ref
+      |> builtin.serialise_data
+      |> builtin.sha2_256
+
   let mint_val: Value =
     from_asset(
       policy_id: pid,
-      asset_name: sha2_256(serialise(out_ref)),
+      asset_name: bytearray.take(hashed_asset_name, 16),
       quantity: 1,
     )
 

@@ -41,21 +41,23 @@ export default async function handler(
     //*********  constructing minting policy with params ***************/
     //**************************************************************** */
     const pkh = getAddressDetails(address).paymentCredential?.hash;
-    //const pkh = paymentCredentialOf(address).hash;
+    const pkh1 = paymentCredentialOf(address).hash;
 
-   console.log("pkh: ",pkh);
+    console.log("pkh: ", pkh);
+    console.log("pkh1: ", pkh1);
     const compiledNft = scripts.validators.find(
       (v) => v.title === "initialmint.init_mint_nft.mint",
     )?.compiledCode;
 
+    const applied =  applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);
 
     const mintingpolicy: MintingPolicy = {
       type: "PlutusV3",
-      script: applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh!]),
+      script: applyDoubleCborEncoding(applied)
     };
 
     const nativePolicyId = mintingPolicyToId(mintingpolicy);
-    console.log("policy id: ",nativePolicyId);
+    console.log("policy id: ", nativePolicyId);
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
@@ -75,17 +77,17 @@ export default async function handler(
       redeemer = Data.to(myData, OutputReference);
       console.log("redeemer: ", redeemer);
       d = toHex(sha256(fromHex(redeemer)));
-      console.log("d: ",d);
-      encodedUtxo = Data.to(d); 
+      console.log("d: ", d);
+      encodedUtxo = Data.to(d);
       console.log("encodedutxo:", encodedUtxo);
-      
+
     } else {
       console.log("not good utxo found");
       res.status(401).json({ error: "Couldn't find utxo" });
       return;
     }
-    const enc = d.slice(0,32);
-    console.log("Enc: ",enc);
+    const enc = d.slice(0, 32);
+    console.log("Enc: ", enc);
     // const encodedUtxoString = Buffer.from(d).toString('hex').slice(0, 32);
     // console.log("Encoded UTxO as string:", encodedUtxoString);
 
@@ -113,8 +115,9 @@ export default async function handler(
           }
         }
       })
+      .addSigner(address)
       .complete({ localUPLCEval: false })
-    
+
 
     res.status(200).json({ tx: tx.toCBOR() });
   } else {
