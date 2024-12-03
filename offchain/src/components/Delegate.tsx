@@ -14,7 +14,7 @@ import axios from 'axios';
 
 
 
-type TransactionType = "Delegate" | "Mint" | "Withdraw" | "Lock" | "Buy" | "Register" | "LockZero" | "BuyZero"
+type TransactionType = "Mint" | "Withdraw" | "Lock" | "Buy" | "Register" | "LockZero" | "BuyZero"
 
 const Delegate = async () => {
 
@@ -87,6 +87,18 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
+        if (param === "Withdraw") {
+          console.log("Im in withdraw");
+          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+          response = await fetch("/api/redeemrewards", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(body),
+          });
+        }
         else {          
             const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };
             response = await fetch("/api/mintinitialseed", {
@@ -99,6 +111,8 @@ const Delegate = async () => {
             });
                 
         }
+
+        console.log("finished with api");
         const { tx } = await response.json();
        
         const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
@@ -106,6 +120,7 @@ const Delegate = async () => {
         console.log(txh);
       } catch (error) {
         console.log(error);
+        console.error(JSON.stringify(error, null, 2)); 
       }
     }
   };
@@ -121,6 +136,9 @@ const Delegate = async () => {
             <h2 className="text-lg font-semibold mb-4">Functions</h2>
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("Mint")}>
               Mint Seed NFT
+            </button>
+            <button className="btn btn-primary mb-4" onClick={() => handleAPI("Withdraw")}>
+              Collect Rewards
             </button>
           </div>
 

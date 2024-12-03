@@ -1,12 +1,15 @@
-import { Blockfrost, fromHex, fromText, Lucid, UTxO, Validator, Data, toHex, Constr, validatorToAddress, toUnit } from "@lucid-evolution/lucid";
+import { Blockfrost, fromHex, fromText, Lucid, UTxO, Validator, Data, toHex, Constr, validatorToAddress, toUnit, OutRef, Koios, Kupmios, Maestro } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig } from "./apitypes";
+import { AssetClass, InitialMintConfig, POSIXTime } from "./apitypes";
 import { getFirstUxtoWithAda } from "./getFirstUtxo";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
-import { fromAddress, OutputReference, RewardsDatum, VestingRedeemer } from "./schemas";
+import { fromAddress, RewardsDatum, VestingRedeemer } from "./schemas";
 import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
+import { TIME_TOLERANCE_MS, TreeToken } from "@/Utils/types";
 
+//TODO: 1. make minting policy id a variable somehow
+// 2. change all networks to variable
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,10 +21,21 @@ export default async function handler(
     //**************************************************************** */
     const initLucid = async () => {
       if (process.env.NODE_ENV === "development") {
-        const b = new Blockfrost(
-          process.env.API_URL_PREPROD as string,
-          process.env.BLOCKFROST_KEY_PREPROD as string
+        // const b = new Blockfrost(
+        //   process.env.API_URL_PREPROD as string,
+        //   process.env.BLOCKFROST_KEY_PREPROD as string
+        // );
+        // const b = new Maestro({
+        //   network: "Preprod", // For MAINNET: "Mainnet"
+        //   apiKey: process.env.MAESTRO_KEY_PREPROD!, // Get yours by visiting https://docs.gomaestro.org/docs/Getting-started/Sign-up-login
+        //   turboSubmit: false, // Read about paid turbo transaction submission feature at https://docs.gomaestro.org/docs/Dapp%20Platform/Turbo%20Transaction
+        // });
+
+        const b =  new Kupmios(
+          process.env.KUPO_ENDPOINT_PREPROD!,
+          process.env.OGMIOS_ENDPOINT_PREPROD!
         );
+     
         return Lucid(b, "Preprod");
       } else {
         const b = new Blockfrost(
@@ -37,7 +51,7 @@ export default async function handler(
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
-    
+
 
     // *****************************************************************/
     //*********  constructing validator with data ***************/
@@ -61,8 +75,8 @@ export default async function handler(
     console.log("contract address: ", contractAddr);
 
     const vestingAsset: AssetClass = {
-      policyId: mintingTokenPolicyId,
-      tokenName: fromText(treeToken)
+      policyId: "d5f1c35b3052da146eb62c6899db029c337e97a8d258ff6e43a04180",
+      tokenName: fromText(TreeToken)
     }
     const currentSlot = lucid.currentSlot();
     const slotLengthInSeconds = 1;
@@ -81,111 +95,135 @@ export default async function handler(
       }, RewardsDatum
     );
 
-     // *****************************************************************/
+    // *****************************************************************/
     //*********  construct stuff ***************/
     //**************************************************************** */
-    config.currentTime ??= Date.now();
+    const currentTime: POSIXTime = Date.now();
+    console.log("current time: ",currentTime);
+    
+    //****** test out ref for first test to make sure things work */
+    const out_ref: OutRef = {
+      txHash: "fe45643c6a17e67f5d671b1be384d27bca0b553c1223e13c1ea5fee00fdf7681",
+      outputIndex: 1
+    };
 
-   
-  
-    const vestingUTXO = (await lucid.utxosByOutRef([config.vestingOutRef]))[0];
-  
-    if (!vestingUTXO)
+    //*********************** */
+    const vestingUTXO: UTxO = (await lucid.utxosByOutRef([out_ref]))[0];
+
+
+    if (!vestingUTXO){
+      console.log("no utxo in script");
       return { type: "error", error: new Error("No Utxo in Script") };
-  
-    if (!vestingUTXO.datum)
+    }
+     
+
+    if (!vestingUTXO.datum){
+      console.log("missing datum");
       return { type: "error", error: new Error("Missing Datum") };
-  
-    const datum = parseSafeDatum(vestingUTXO.datum, VestingDatum);
+    }
+      
+
+    const datum = parseSafeDatum(vestingUTXO.datum, RewardsDatum);
     if (datum.type == "left")
       return { type: "error", error: new Error(datum.value) };
-  
+
+
+    console.log("vesting period end: ", datum.value.vestingPeriodEnd);
     const vestingPeriodLength =
       datum.value.vestingPeriodEnd - datum.value.vestingPeriodStart;
-  
+
     const vestingTimeRemaining =
-      datum.value.vestingPeriodEnd - BigInt(config.currentTime);
-    // console.log("vestingTimeRemaining", vestingTimeRemaining);
-  
+      datum.value.vestingPeriodEnd - BigInt(currentTime);
+    console.log("vestingTimeRemaining", vestingTimeRemaining);
+
     const timeBetweenTwoInstallments = divCeil(
       BigInt(vestingPeriodLength),
       datum.value.totalInstallments
     );
-    // console.log("timeBetweenTwoInstallments", timeBetweenTwoInstallments);
-  
+    console.log("timeBetweenTwoInstallments", timeBetweenTwoInstallments);
+
     const futureInstallments = divCeil(
       vestingTimeRemaining,
       timeBetweenTwoInstallments
     );
-    // console.log("futureInstallments", futureInstallments);
-  
+    console.log("futureInstallments", futureInstallments);
+
     const expectedRemainingQty = divCeil(
       futureInstallments * datum.value.totalVestingQty,
       datum.value.totalInstallments
     );
-    // console.log("expectedRemainingQty", expectedRemainingQty);
-  
-    const vestingTokenUnit = datum.value.assetClass.symbol
-      ? toUnit(datum.value.assetClass.symbol, datum.value.assetClass.name)
+    console.log("expectedRemainingQty", expectedRemainingQty);
+
+    const vestingTokenUnit = datum.value.vestingAsset.policyId
+      ? toUnit(datum.value.vestingAsset.policyId, datum.value.vestingAsset.tokenName)
       : "lovelace";
-    // console.log("vestingTokenUnit", vestingTokenUnit)
-  
+    console.log("vestingTokenUnit", vestingTokenUnit)
+
     const vestingTokenAmount =
       vestingTimeRemaining < 0n
         ? vestingUTXO.assets[vestingTokenUnit]
         : vestingUTXO.assets[vestingTokenUnit] - expectedRemainingQty;
-    // console.log("vestingTokenAmount", vestingTokenAmount);
-  
-    const beneficiaryAddress = toAddress(datum.value.beneficiary, network);
-  
-    const vestingRedeemer =
+    console.log("vestingTokenAmount", vestingTokenAmount);
+
+    const beneficiaryAddress = toAddress(datum.value.beneficiary, "Preprod");
+    console.log("Beneficiary Address: ", beneficiaryAddress);
+    const rewardsRedeemer =
       vestingTimeRemaining < 0n
         ? Data.to("FullUnlock", VestingRedeemer)
         : Data.to("PartialUnlock", VestingRedeemer);
-  
-    // *****************************************************************/
-    //*********  find utxo and construct redeemer ***************/
-    //**************************************************************** */
 
-    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
-    console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
-    let encodedUtxo, nftRedeemer, d
-
-    if (goodUtxo !== undefined) {
-      const myData = {
-        transaction_id: goodUtxo.txHash,
-        output_index: BigInt(goodUtxo.outputIndex)
-      }
-      nftRedeemer = Data.to(myData, OutputReference);
-      console.log("redeemer: ", nftRedeemer);
-      d = toHex(sha256(fromHex(nftRedeemer)));
-      console.log("d: ", d);
-      encodedUtxo = Data.to(d);
-      console.log("encodedutxo:", encodedUtxo);
-
-    } else {
-      console.log("not good utxo found");
-      res.status(401).json({ error: "Couldn't find utxo" });
-      return;
-    }
-    const enc = d.slice(0, 32);
-    console.log("Enc: ", enc);
-    const tokenRedeemer = Data.to(new Constr(0, [[]]));
-
+    const upperBound = Number(currentTime + TIME_TOLERANCE_MS);
+    const lowerBound = Number(currentTime - TIME_TOLERANCE_MS);
 
     // *****************************************************************/
     //*********  constructing transaction ******************************/
     // redeem rewards
     //**************************************************************** */
-    const tx = await lucid
-      .newTx()
-      .collectFrom([goodUtxo])    
-      .attach.SpendingValidator(rewardsValidator)     
-      .addSigner(address)
-      .complete({ localUPLCEval: false })
+    try {
+      let tx;
+      console.log("unlocking");
+      if (vestingTimeRemaining < 0n) {
+        console.log("Doing full unlock");
+        tx = await lucid
+          .newTx()
+          .collectFrom([vestingUTXO], rewardsRedeemer)
+          .attach.SpendingValidator(rewardsValidator)
+          .pay.ToAddress(beneficiaryAddress,
+            
+            {
+              [vestingTokenUnit]: vestingTokenAmount,
+            })
+          .validFrom(lowerBound)
+          .validTo(upperBound)
+          .addSigner(beneficiaryAddress)
+          .complete({ localUPLCEval: false });
 
+        res.status(200).json({ tx: tx.toCBOR() });
+      } else {
+        console.log("Doing partial unlock unlock");
+        tx = await lucid
+          .newTx()
+          .collectFrom([vestingUTXO], rewardsRedeemer)
+          .attach.SpendingValidator(rewardsValidator)
+          .pay.ToAddress(beneficiaryAddress, {
+            [vestingTokenUnit]: vestingTokenAmount,
+          })
+          .pay.ToContract(
+            contractAddr,
+            { kind: "inline", value: Data.to(datum.value, RewardsDatum) },
+            { [vestingTokenUnit]: expectedRemainingQty }
+          )
+          .addSigner(beneficiaryAddress)
+          // .validFrom(lowerBound)
+          // .validTo(upperBound)
+          .complete({ localUPLCEval: false });
+        res.status(200).json({ tx: tx.toCBOR() });
+      }
+    } catch (error) {
+      console.log("transaction error: ", error);
+      res.status(400).json({ error: "Transaction Error" });
+    }
 
-    res.status(200).json({ tx: tx.toCBOR() });
   } else {
     res.status(405).json({ error: "Method not allowed" });
   }

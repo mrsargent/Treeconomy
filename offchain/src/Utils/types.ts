@@ -1,5 +1,7 @@
 import { Address, Assets, OutRef } from "@lucid-evolution/lucid";
 
+export const TreeToken: string = "Treeconomy Token";
+export const TIME_TOLERANCE_MS: POSIXTime = 100000;
 export type CborHex = string;
 export type RawHex = string;
 export type POSIXTime = number;

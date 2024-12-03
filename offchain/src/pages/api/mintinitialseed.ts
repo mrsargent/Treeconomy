@@ -1,11 +1,11 @@
-import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, scriptFromNative, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress } from "@lucid-evolution/lucid";
+import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { AssetClass, InitialMintConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./getFirstUtxo";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, OutputReference, RewardsDatum } from "./schemas";
-import { blake2b } from '@noble/hashes/blake2b';
+import { TreeToken } from "@/Utils/types";
 
 
 export default async function handler(
@@ -61,15 +61,14 @@ export default async function handler(
 
     // *****************************************************************/
     //*********  constructing token minting policy with params ***************/
-    //**************************************************************** */
-    const treeToken: string = "Treeconomy Token";
+    //**************************************************************** */   
     const compiledToken = scripts.validators.find(
       (v) => v.title === "initialmint.init_mint_token.mint",
     )?.compiledCode;
 
     const mintingTokenpolicy: MintingPolicy = {
       type: "PlutusV3",
-      script: applyParamsToScript(applyDoubleCborEncoding(compiledToken!), [pkh1, fromText(treeToken)])
+      script: applyParamsToScript(applyDoubleCborEncoding(compiledToken!), [pkh1, fromText(TreeToken)])
     };
 
     const mintingTokenPolicyId = mintingPolicyToId(mintingTokenpolicy);
@@ -98,12 +97,12 @@ export default async function handler(
 
     const vestingAsset: AssetClass = {
       policyId: mintingTokenPolicyId,
-      tokenName: fromText(treeToken)
+      tokenName: fromText(TreeToken)
     }
-    const currentSlot = lucid.currentSlot();
+    const currentSlot = Date.now(); //lucid.currentSlot();
     const slotLengthInSeconds = 1;
     const oneHourInSlots = Math.floor(3600 / slotLengthInSeconds);
-
+    const oneMinuteInSlots = Math.floor(60/slotLengthInSeconds);
 
     const rewardsDatum = Data.to(
       {
@@ -111,9 +110,9 @@ export default async function handler(
         vestingAsset: vestingAsset,
         totalVestingQty: 10000n,
         vestingPeriodStart: BigInt(currentSlot),
-        vestingPeriodEnd: BigInt(currentSlot + oneHourInSlots),
+        vestingPeriodEnd: BigInt(currentSlot + oneMinuteInSlots),
         firstUnlockPossibleAfter: BigInt(currentSlot + 1),
-        totalInstallments: 5n
+        totalInstallments: 2n
       }, RewardsDatum
     );
 
@@ -164,10 +163,10 @@ export default async function handler(
           kind: "inline",
           value: rewardsDatum,
         },
-        { [mintingTokenPolicyId + fromText(treeToken)]: 10000n }
+        { [mintingTokenPolicyId + fromText(TreeToken)]: 10000n }
       )
       .mintAssets({
-        [mintingTokenPolicyId + fromText(treeToken)]: 10000n,
+        [mintingTokenPolicyId + fromText(TreeToken)]: 10000n,
       }, tokenRedeemer)
       .mintAssets({
         [mintingNFTPolicyId + enc]: 1n,
@@ -177,9 +176,9 @@ export default async function handler(
       .attachMetadata(721, {
         [mintingNFTPolicyId]: {
           [enc]: {
-            name: "Seed NFT 2",
+            name: "Seed NFT 5",
             image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-            description: "No: 1 Tree species: oak"
+            description: "No: 5 Tree species: pecan"
           }
         }
       })

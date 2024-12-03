@@ -1,3 +1,4 @@
+use aiken/cbor
 use aiken/collection/list
 use cardano/address.{VerificationKey}
 use cardano/assets.{quantity_of}
@@ -129,6 +130,8 @@ fn validate_full_unlock(
   //full unlock not permitted until vesting period end time 
   let full_unlock_possible =
     must_start_after(self.validity_range, vestingPeriodEnd)
+  trace cbor.diagnostic(self.validity_range)
+  trace cbor.diagnostic(vestingPeriodEnd)
 
   and {
     correct_signature?,
