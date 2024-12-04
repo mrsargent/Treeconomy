@@ -1,12 +1,11 @@
-import { Blockfrost, fromHex, fromText, Lucid, UTxO, Validator, Data, toHex, Constr, validatorToAddress, toUnit, OutRef, Koios, Kupmios, Maestro } from "@lucid-evolution/lucid";
+import { Blockfrost, fromText, Lucid, UTxO, Validator, Data, validatorToAddress, toUnit, OutRef, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig, POSIXTime } from "./apitypes";
-import { getFirstUxtoWithAda } from "./getFirstUtxo";
-import { sha256 } from '@noble/hashes/sha2';
+import { AssetClass, InitialMintConfig } from "./apitypes";
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, RewardsDatum, VestingRedeemer } from "./schemas";
 import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
-import { TIME_TOLERANCE_MS, TreeToken } from "@/Utils/types";
+import { ONE_HOUR_MS, ONE_MIN_MS, TIME_TOLERANCE_MS, TreeToken } from "@/Utils/constants";
+import { POSIXTime } from "@/Utils/types";
 
 //TODO: 1. make minting policy id a variable somehow
 // 2. change all networks to variable
@@ -78,32 +77,29 @@ export default async function handler(
       policyId: "d5f1c35b3052da146eb62c6899db029c337e97a8d258ff6e43a04180",
       tokenName: fromText(TreeToken)
     }
-    const currentSlot = lucid.currentSlot();
-    const slotLengthInSeconds = 1;
-    const oneHourInSlots = Math.floor(3600 / slotLengthInSeconds);
-
+    const currentTime: POSIXTime = Date.now();
+    console.log("current time: ",currentTime);
+    
 
     const rewardsDatum = Data.to(
       {
         beneficiary: fromAddress(address),
         vestingAsset: vestingAsset,
-        totalVestingQty: 10000n,
-        vestingPeriodStart: BigInt(currentSlot),
-        vestingPeriodEnd: BigInt(currentSlot + oneHourInSlots),
-        firstUnlockPossibleAfter: BigInt(currentSlot + 1),
-        totalInstallments: 5n
+        totalVestingQty: 10_000n,
+        vestingPeriodStart: BigInt(currentTime),
+        vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
+        firstUnlockPossibleAfter: BigInt(currentTime + ONE_MIN_MS),
+        totalInstallments: 3n
       }, RewardsDatum
     );
-
+    
     // *****************************************************************/
     //*********  construct stuff ***************/
     //**************************************************************** */
-    const currentTime: POSIXTime = Date.now();
-    console.log("current time: ",currentTime);
-    
+
     //****** test out ref for first test to make sure things work */
     const out_ref: OutRef = {
-      txHash: "fe45643c6a17e67f5d671b1be384d27bca0b553c1223e13c1ea5fee00fdf7681",
+      txHash: "4054cabbd2604c32e2eb64b67ecbf9ed89d3bd55c8465da5b42c1db28f253ad7",
       outputIndex: 1
     };
 
@@ -164,6 +160,7 @@ export default async function handler(
         ? vestingUTXO.assets[vestingTokenUnit]
         : vestingUTXO.assets[vestingTokenUnit] - expectedRemainingQty;
     console.log("vestingTokenAmount", vestingTokenAmount);
+    console.log("vestingUTXO.assets[vestingTokenUnit]: ",vestingUTXO.assets[vestingTokenUnit]);
 
     const beneficiaryAddress = toAddress(datum.value.beneficiary, "Preprod");
     console.log("Beneficiary Address: ", beneficiaryAddress);
@@ -212,10 +209,10 @@ export default async function handler(
             contractAddr,
             { kind: "inline", value: Data.to(datum.value, RewardsDatum) },
             { [vestingTokenUnit]: expectedRemainingQty }
-          )
+          )          
+          .validFrom(lowerBound)
+          .validTo(upperBound)
           .addSigner(beneficiaryAddress)
-          // .validFrom(lowerBound)
-          // .validTo(upperBound)
           .complete({ localUPLCEval: false });
         res.status(200).json({ tx: tx.toCBOR() });
       }

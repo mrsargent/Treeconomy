@@ -1,8 +1,7 @@
+import { POSIXTime } from "@/Utils/types";
 import { Address, fromUnit, LucidEvolution, RewardAddress, UTxO } from "@lucid-evolution/lucid"
 
-export type CborHex = string;
-export type RawHex = string;
-export type POSIXTime = number;
+
 
 export type AssetClass = {
   policyId: string;

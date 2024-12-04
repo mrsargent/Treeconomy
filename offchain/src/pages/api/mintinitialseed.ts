@@ -5,7 +5,8 @@ import { getFirstUxtoWithAda } from "./getFirstUtxo";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, OutputReference, RewardsDatum } from "./schemas";
-import { TreeToken } from "@/Utils/types";
+import { POSIXTime } from "@/Utils/types";
+import { ONE_HOUR_MS, ONE_MIN_MS, TreeToken } from "@/Utils/constants";
 
 
 export default async function handler(
@@ -99,20 +100,20 @@ export default async function handler(
       policyId: mintingTokenPolicyId,
       tokenName: fromText(TreeToken)
     }
-    const currentSlot = Date.now(); //lucid.currentSlot();
-    const slotLengthInSeconds = 1;
-    const oneHourInSlots = Math.floor(3600 / slotLengthInSeconds);
-    const oneMinuteInSlots = Math.floor(60/slotLengthInSeconds);
+    const currentTime: POSIXTime = Date.now();
+    console.log("current time: ",currentTime);
+    
+
 
     const rewardsDatum = Data.to(
       {
         beneficiary: fromAddress(address),
         vestingAsset: vestingAsset,
-        totalVestingQty: 10000n,
-        vestingPeriodStart: BigInt(currentSlot),
-        vestingPeriodEnd: BigInt(currentSlot + oneMinuteInSlots),
-        firstUnlockPossibleAfter: BigInt(currentSlot + 1),
-        totalInstallments: 2n
+        totalVestingQty: 10_000n,
+        vestingPeriodStart: BigInt(currentTime),
+        vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
+        firstUnlockPossibleAfter: BigInt(currentTime + ONE_MIN_MS),
+        totalInstallments: 3n
       }, RewardsDatum
     );
 
