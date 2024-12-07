@@ -158,3 +158,28 @@ test test_divide1() {
 test test_divide2() fail {
   divide_ceil_int(5, 2) == 2
 }
+
+/// Proves that inside some value there is a policy id with token
+/// name that has a quantity of -1. This will show that a value contains an
+/// NFT burn or something that is nft-like. Should be useful to prove that
+/// something is burning a token inside a transaction when the policy id and
+/// token name is known.
+///
+pub fn prove_exact_nft_burn(
+  total_value: Value,
+  nft_pid: PolicyId,
+  nft_tkn: AssetName,
+) -> Bool {
+  // exactly 1 token inside a value
+  assets.quantity_of(total_value, nft_pid, nft_tkn) == -1
+}
+
+pub fn find_burn_nft(val: Value, policyid: PolicyId) -> Bool {
+  list.any(
+    flatten(val),
+    fn(asset) {
+      let (p, _, qty) = asset
+      p == policyid && qty == -1
+    },
+  )
+}

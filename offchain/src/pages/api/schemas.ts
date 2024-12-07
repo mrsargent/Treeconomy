@@ -79,14 +79,9 @@ export function fromAddress(address: Address): AddressObject {
 }
 
 
-const OutputReferenceSchema = Data.Object({
-  transaction_id: Data.Bytes(),
-  output_index: Data.Integer()
-});
 
 
-export type OutputReference = Data.Static<typeof OutputReferenceSchema>;
-export const OutputReference = OutputReferenceSchema as unknown as OutputReference;
+
 
 
 //-- Datum schema
@@ -126,3 +121,24 @@ export const VestingRedeemerSchema = Data.Enum([
 export type VestingRedeemer = Data.Static<typeof VestingRedeemerSchema>;
 export const VestingRedeemer =
   VestingRedeemerSchema as unknown as VestingRedeemer;
+
+const OutputReferenceSchema = Data.Object({
+    transaction_id: Data.Bytes(),
+    output_index: Data.Integer()
+  });  
+
+const MintActionSchema = Data.Enum([
+  Data.Literal("Mint"),
+  Data.Literal("Burn")
+]);
+
+export const MintRedeemerSchema = Data.Object({
+  out_ref: OutputReferenceSchema,
+  action: MintActionSchema
+});
+
+export type MintRedeemer = Data.Static<typeof MintRedeemerSchema>;
+export const MintRedeemer = MintRedeemerSchema as unknown as MintRedeemer;
+
+export type OutputReference = Data.Static<typeof OutputReferenceSchema>;
+export const OutputReference = OutputReferenceSchema as unknown as OutputReference;

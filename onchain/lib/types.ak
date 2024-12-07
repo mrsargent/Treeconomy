@@ -1,5 +1,6 @@
 use cardano/address.{Address}
 use cardano/assets.{AssetName, PolicyId}
+use cardano/transaction.{OutputReference}
 
 //******************************************
 //********* standard util types ************
@@ -28,4 +29,14 @@ pub type Rewards_Datum {
 pub type Rewards_Redeemer {
   PartialUnlock
   FullUnlock
+}
+
+pub type Action {
+  Mint
+  Burn
+}
+
+pub type MintRedeemer {
+  out_ref: OutputReference,
+  action: Action,
 }

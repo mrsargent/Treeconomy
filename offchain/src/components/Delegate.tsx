@@ -14,7 +14,7 @@ import axios from 'axios';
 
 
 
-type TransactionType = "Mint" | "Withdraw" | "Lock" | "Buy" | "Register" | "LockZero" | "BuyZero"
+type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn"
 
 const Delegate = async () => {
 
@@ -99,25 +99,43 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
-        else {          
-            const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };
-            response = await fetch("/api/mintinitialseed", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-  
-              body: JSON.stringify(body),
-            });
-                
-        }
+        if (param === "BurnMintSapling") {
+          console.log("Im in BurnMintSapling");
+          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+          response = await fetch("/api/mintburnnft", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
 
-        console.log("finished with api");
-        const { tx } = await response.json();
+            body: JSON.stringify(body),
+          });
+        }
+        if (param === "Burn") {        
+          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+          response = await fetch("/api/burnnft", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(body),
+          });
+        }
        
-        const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
-        const txh = await signedTx.submit();
-        console.log(txh);
+
+          if (response){
+            console.log("finished with api");
+            const { tx } = await response.json();
+           
+            const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
+            const txh = await signedTx.submit();
+            console.log(txh);
+          }    
+         
+       
+        
+       
       } catch (error) {
         console.log(error);
         console.error(JSON.stringify(error, null, 2)); 
@@ -139,6 +157,12 @@ const Delegate = async () => {
             </button>
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("Withdraw")}>
               Collect Rewards
+            </button>
+            <button className="btn btn-primary mb-4" onClick={() => handleAPI("BurnMintSapling")}>
+              Seed - Sapling
+            </button>
+            <button className="btn btn-primary mb-4" onClick={() => handleAPI("Burn")}>
+              Burn Baby Burn
             </button>
           </div>
 

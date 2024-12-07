@@ -8,6 +8,7 @@ import { fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./sche
 import { POSIXTime } from "@/Utils/types";
 import { ONE_HOUR_MS, ONE_MIN_MS, TreeToken } from "@/Utils/constants";
 
+//TODO: bring in NFT policyid to burn
 
 export default async function handler(
   req: NextApiRequest,
@@ -63,71 +64,14 @@ export default async function handler(
 
     const mintingNFTPolicyId = mintingPolicyToId(mintingNFTpolicy);
     console.log("policy id: ", mintingNFTPolicyId);
-
-    // *****************************************************************/
-    //*********  constructing token minting policy with params ***************/
-    //**************************************************************** */   
-    const compiledToken = scripts.validators.find(
-      (v) => v.title === "initialmint.init_mint_token.mint",
-    )?.compiledCode;
-
-    const mintingTokenpolicy: MintingPolicy = {
-      type: "PlutusV3",
-      script: applyParamsToScript(applyDoubleCborEncoding(compiledToken!), [pkh1, fromText(TreeToken)])
-    };
-
-    const mintingTokenPolicyId = mintingPolicyToId(mintingTokenpolicy);
-    console.log("policy id: ", mintingTokenPolicyId);
-
-    // *****************************************************************/
-    //*********  constructing validator with data ***************/
-    //**************************************************************** */
-    const compiledValidators = scripts.validators.find(
-      (v) => v.title === "rewards_validator.rewards_validator.spend",
-    )?.compiledCode;
-
-    const rewardsValidator: Validator = {
-      type: "PlutusV3",
-      script: compiledValidators!
-    };
-
-    let contractAddr
-    if (process.env.NODE_ENV === "development") {
-      contractAddr = validatorToAddress("Preprod", rewardsValidator);
-    }
-    else {
-      contractAddr = validatorToAddress("Mainnet", rewardsValidator);
-    }
-    console.log("contract address: ", contractAddr);
-
-    const vestingAsset: AssetClass = {
-      policyId: mintingTokenPolicyId,
-      tokenName: fromText(TreeToken)
-    }
-    const currentTime: POSIXTime = Date.now();
-    console.log("current time: ", currentTime);
-
-
-
-    const rewardsDatum = Data.to(
-      {
-        beneficiary: fromAddress(address),
-        vestingAsset: vestingAsset,
-        totalVestingQty: 10_000n,
-        vestingPeriodStart: BigInt(currentTime),
-        vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
-        firstUnlockPossibleAfter: BigInt(currentTime + ONE_MIN_MS),
-        totalInstallments: 3n
-      }, RewardsDatum
-    );
-
+  
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
 
     const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
     console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
-    let nftRedeemer, hashedData, nftName 
+    let encodedUtxo, nftRedeemer, d, nftName 
 
     if (goodUtxo !== undefined) {
       const myData = {
@@ -137,58 +81,37 @@ export default async function handler(
 
       nftRedeemer = Data.to({
         out_ref: myData,
-        action: "Mint"
+        action: "Burn"
       }, MintRedeemer);
 
-      nftName = Data.to(myData, OutputReference);     
-      hashedData = toHex(sha256(fromHex(nftName)));     
+      nftName = Data.to(myData, OutputReference);
+
+      console.log("redeemer: ", nftRedeemer);
+      d = toHex(sha256(fromHex(nftName)));
+      console.log("d: ", d);
+      encodedUtxo = Data.to(d);
+      console.log("encodedutxo:", encodedUtxo);
 
     } else {
       console.log("not good utxo found");
       res.status(401).json({ error: "Couldn't find utxo" });
       return;
     }
-    const formattedName = hashedData.slice(0, 32);
-    console.log("Enc: ", formattedName);
-    const tokenRedeemer = Data.to(new Constr(0, [[]]));
 
+    //enter burn name here
+    const enc = "65b359e3a22b20edab8c101b1b042778"
+    console.log("Enc: ", enc);
 
     // *****************************************************************/
     //*********  constructing transaction ******************************/
-    //** Note: Asset name is the serialized out_ref.  This will always
-    //* give the NFT a unique encoded name (i.e.  policyid + token name)*/
     //**************************************************************** */
     const tx = await lucid
       .newTx()
-      .collectFrom([goodUtxo])
-      .pay.ToAddress(address, {
-        [mintingNFTPolicyId + formattedName]: 1n,
-      })
-      .pay.ToAddressWithData(
-        contractAddr,
-        {
-          kind: "inline",
-          value: rewardsDatum,
-        },
-        { [mintingTokenPolicyId + fromText(TreeToken)]: 10000n }
-      )
+      .collectFrom([goodUtxo])             
       .mintAssets({
-        [mintingTokenPolicyId + fromText(TreeToken)]: 10000n,
-      }, tokenRedeemer)
-      .mintAssets({
-        [mintingNFTPolicyId + formattedName]: 1n,
-      }, nftRedeemer)
-      .attach.MintingPolicy(mintingTokenpolicy)
-      .attach.MintingPolicy(mintingNFTpolicy)
-      .attachMetadata(721, {
-        [mintingNFTPolicyId]: {
-          [formattedName]: {
-            name: "Seed NFT 12",
-            image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-            description: "No: 11 Tree species: pecan"
-          }
-        }
-      })
+        [mintingNFTPolicyId + enc]: -1n,        
+      }, nftRedeemer)      
+      .attach.MintingPolicy(mintingNFTpolicy)      
       .addSigner(address)
       .complete({ localUPLCEval: false })
 
