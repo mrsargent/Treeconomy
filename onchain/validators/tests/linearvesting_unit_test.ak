@@ -1,23 +1,22 @@
 use aiken/crypto.{VerificationKeyHash}
 use aiken/interval.{Interval}
 use cardano/transaction.{Input, Output, OutputReference, Transaction}
-use rewards_validator
+use linearvesting
 use tests/fake_tx
 use tests/utils_test.{
   create_interval_lowerbound, create_interval_range, rewards_datum1,
   rewards_datum2, test_bad_inputs1, test_bad_inputs2, test_bad_outputs1,
   test_bad_outputs2, test_bad_outputs3, test_bad_outputs4,
 }
-use types.{FullUnlock,
-  POSIXtime, PartialUnlock, Rewards_Datum, Rewards_Redeemer}
+use types.{FullUnlock, POSIXtime, PartialUnlock, VestingDatum, VestingRedeemer}
 
 //********************************************************************************
 //******************* rewards validator fullunlock unit tests *********************
 //********************************************************************************
 
 test rewards_validator_fullunlock_test() {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = FullUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = FullUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let signature: VerificationKeyHash = #"abcd"
   let i: Interval<POSIXtime> = create_interval_lowerbound(101)
@@ -31,7 +30,7 @@ test rewards_validator_fullunlock_test() {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -40,8 +39,8 @@ test rewards_validator_fullunlock_test() {
 }
 
 test rewards_validator_fullunlock_test_not_past_deadline() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = FullUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = FullUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let signature: VerificationKeyHash = #"abcd"
   let i: Interval<POSIXtime> = create_interval_lowerbound(99)
@@ -55,7 +54,7 @@ test rewards_validator_fullunlock_test_not_past_deadline() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -64,8 +63,8 @@ test rewards_validator_fullunlock_test_not_past_deadline() fail {
 }
 
 test rewards_validator_fullunlock_test_bad_address() fail {
-  let datum: Rewards_Datum = rewards_datum2()
-  let redeemer: Rewards_Redeemer = FullUnlock
+  let datum: VestingDatum = rewards_datum2()
+  let redeemer: VestingRedeemer = FullUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let signature: VerificationKeyHash = #"abcd"
   let i: Interval<POSIXtime> = create_interval_lowerbound(99)
@@ -79,7 +78,7 @@ test rewards_validator_fullunlock_test_bad_address() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -92,8 +91,8 @@ test rewards_validator_fullunlock_test_bad_address() fail {
 //********************************************************************************
 
 test rewards_validator_partialunlock_test() {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs1()
@@ -111,7 +110,7 @@ test rewards_validator_partialunlock_test() {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -120,8 +119,8 @@ test rewards_validator_partialunlock_test() {
 }
 
 test rewards_validator_partialunlock_test_bad_signature() fail {
-  let datum: Rewards_Datum = rewards_datum2()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum2()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs1()
@@ -139,7 +138,7 @@ test rewards_validator_partialunlock_test_bad_signature() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -148,8 +147,8 @@ test rewards_validator_partialunlock_test_bad_signature() fail {
 }
 
 test rewards_validator_partialunlock_test_before_first_unlock() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs1()
@@ -167,7 +166,7 @@ test rewards_validator_partialunlock_test_before_first_unlock() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -176,8 +175,8 @@ test rewards_validator_partialunlock_test_before_first_unlock() fail {
 }
 
 test rewards_validator_partialunlock_test_zero_asset_remain() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs2()
@@ -195,7 +194,7 @@ test rewards_validator_partialunlock_test_zero_asset_remain() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -204,8 +203,8 @@ test rewards_validator_partialunlock_test_zero_asset_remain() fail {
 }
 
 test rewards_validator_partialunlock_test_remaining_assets_less() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs3()
@@ -223,7 +222,7 @@ test rewards_validator_partialunlock_test_remaining_assets_less() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -232,8 +231,8 @@ test rewards_validator_partialunlock_test_remaining_assets_less() fail {
 }
 
 test rewards_validator_partialunlock_test_bad_expected_qty() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs1()
@@ -251,7 +250,7 @@ test rewards_validator_partialunlock_test_bad_expected_qty() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -260,8 +259,8 @@ test rewards_validator_partialunlock_test_bad_expected_qty() fail {
 }
 
 test rewards_validator_partialunlock_test_bad_datum_equivalent() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs1()
   let test_outputs: List<Output> = test_bad_outputs4()
@@ -279,7 +278,7 @@ test rewards_validator_partialunlock_test_bad_datum_equivalent() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -288,8 +287,8 @@ test rewards_validator_partialunlock_test_bad_datum_equivalent() fail {
 }
 
 test rewards_validator_partialunlock_test_too_many_script_inputs() fail {
-  let datum: Rewards_Datum = rewards_datum1()
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let datum: VestingDatum = rewards_datum1()
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = fake_tx.test_out_ref()
   let test_inputs: List<Input> = test_bad_inputs2()
   let test_outputs: List<Output> = test_bad_outputs1()
@@ -307,7 +306,7 @@ test rewards_validator_partialunlock_test_too_many_script_inputs() fail {
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,

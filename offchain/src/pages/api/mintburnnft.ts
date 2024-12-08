@@ -1,6 +1,6 @@
 import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig } from "./apitypes";
+import { AssetClass, InitialMintConfig, MintBurnConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./getFirstUtxo";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
@@ -39,7 +39,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { TokenName, address, compiledCodeNFT, compiledCodeToken }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName, burnAssetName  }: MintBurnConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -52,7 +52,7 @@ export default async function handler(
     console.log("pkh: ", pkh);
     console.log("pkh1: ", pkh1);
     const compiledNft = scripts.validators.find(
-      (v) => v.title === "initialmint1.init_mint_nft.mint",
+      (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
 
     const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);
@@ -65,7 +65,7 @@ export default async function handler(
     const mintingNFTPolicyId = mintingPolicyToId(mintingNFTpolicy);
     console.log("policy id: ", mintingNFTPolicyId);
   
-    const burnNftAssetName = "f59dde19714b45504afa7df45fe2e6a9";
+    const burnNftAssetName = burnAssetName;
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
@@ -120,7 +120,7 @@ export default async function handler(
       .attachMetadata(721, {
         [mintingNFTPolicyId]: {
           [formattedName]: {
-            name: "Sapling NFT 1",
+            name: "Sapling NFT 2",
             image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
             description: "No: 1 Tree species: pecan"
           }

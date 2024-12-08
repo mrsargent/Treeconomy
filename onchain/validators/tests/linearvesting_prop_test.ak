@@ -7,11 +7,11 @@ use cardano/assets.{AssetName, PolicyId}
 use cardano/transaction.{
   InlineDatum, Input, NoDatum, Output, OutputReference, Transaction,
 }
-use rewards_validator
+use linearvesting
 use tests/utils_test
 use types.{
-  AssetClass, FullUnlock, POSIXtime, PartialUnlock, Rewards_Datum,
-  Rewards_Redeemer,
+  AssetClass, FullUnlock, POSIXtime, PartialUnlock, VestingDatum,
+  VestingRedeemer,
 }
 
 //********************************************************************************
@@ -23,8 +23,8 @@ test rewards_validator_fullunlock_proptest(
 ) {
   let FullUnlockTest { addr, out_ref, pid, tn, time_interval } = param
 
-  let datum: Rewards_Datum =
-    Rewards_Datum {
+  let datum: VestingDatum =
+    VestingDatum {
       beneficiary: addr,
       vestingAsset: AssetClass { policyid: pid, tokenName: tn },
       totalVestingQty: 100,
@@ -34,7 +34,7 @@ test rewards_validator_fullunlock_proptest(
       totalInstallments: 10,
     }
 
-  let redeemer: Rewards_Redeemer = FullUnlock
+  let redeemer: VestingRedeemer = FullUnlock
   let out_ref: OutputReference = out_ref
   expect VerificationKey(vkh) = datum.beneficiary.payment_credential
   let signature: VerificationKeyHash = vkh
@@ -50,7 +50,7 @@ test rewards_validator_fullunlock_proptest(
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,
@@ -67,8 +67,8 @@ test rewards_validator_partialunlock_proptest(
 ) {
   let PartialUnlockTest { addr, out_ref, inputs, outputs, pid, tn, .. } = param
 
-  let datum: Rewards_Datum =
-    Rewards_Datum {
+  let datum: VestingDatum =
+    VestingDatum {
       beneficiary: addr,
       vestingAsset: AssetClass { policyid: pid, tokenName: tn },
       totalVestingQty: 100,
@@ -78,7 +78,7 @@ test rewards_validator_partialunlock_proptest(
       totalInstallments: 10,
     }
 
-  let redeemer: Rewards_Redeemer = PartialUnlock
+  let redeemer: VestingRedeemer = PartialUnlock
   let out_ref: OutputReference = out_ref
   expect VerificationKey(vkh) = datum.beneficiary.payment_credential
   let signature: VerificationKeyHash = vkh
@@ -95,7 +95,7 @@ test rewards_validator_partialunlock_proptest(
           }
         }
 
-  rewards_validator.rewards_validator.spend(
+  linearvesting.linearvesting_validator.spend(
     Some(datum),
     redeemer,
     out_ref,

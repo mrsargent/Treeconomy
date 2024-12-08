@@ -1,6 +1,6 @@
 import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig } from "./apitypes";
+import { AssetClass, BurnConfig, InitialMintConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./getFirstUtxo";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
@@ -39,7 +39,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { TokenName, address, compiledCodeNFT, compiledCodeToken }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName}: BurnConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -52,7 +52,7 @@ export default async function handler(
     console.log("pkh: ", pkh);
     console.log("pkh1: ", pkh1);
     const compiledNft = scripts.validators.find(
-      (v) => v.title === "initialmint1.init_mint_nft.mint",
+      (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
 
     const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);

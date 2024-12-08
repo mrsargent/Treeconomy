@@ -4,7 +4,7 @@ use cardano/address.{Address}
 use cardano/addresses
 use cardano/assets.{AssetName, PolicyId, Value, from_asset}
 use cardano/transaction.{InlineDatum, Input, NoDatum, Output, OutputReference}
-use types.{AssetClass, POSIXtime, Rewards_Datum}
+use types.{AssetClass, POSIXtime, VestingDatum}
 
 //********************************************************************************
 //******************** helper functions property test *********************
@@ -61,9 +61,9 @@ pub fn generate_interval_int() -> Fuzzer<Int> {
 //******************** helper functions unit test *********************
 //********************************************************************************
 
-pub fn rewards_datum1() -> Rewards_Datum {
-  let datum: Rewards_Datum =
-    Rewards_Datum {
+pub fn rewards_datum1() -> VestingDatum {
+  let datum: VestingDatum =
+    VestingDatum {
       beneficiary: create_address1(),
       vestingAsset: AssetClass { policyid: #"acab", tokenName: #"beef" },
       totalVestingQty: 100,
@@ -75,9 +75,9 @@ pub fn rewards_datum1() -> Rewards_Datum {
   datum
 }
 
-pub fn rewards_datum2() -> Rewards_Datum {
-  let datum: Rewards_Datum =
-    Rewards_Datum {
+pub fn rewards_datum2() -> VestingDatum {
+  let datum: VestingDatum =
+    VestingDatum {
       beneficiary: create_bad_address1(),
       vestingAsset: AssetClass { policyid: #"acab", tokenName: #"beef" },
       totalVestingQty: 100,

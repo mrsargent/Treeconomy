@@ -16,7 +16,7 @@ pub type AssetClass {
 //******************************************
 //********* rewards validator types ********
 //******************************************
-pub type Rewards_Datum {
+pub type VestingDatum {
   beneficiary: Address,
   vestingAsset: AssetClass,
   totalVestingQty: Int,
@@ -26,10 +26,30 @@ pub type Rewards_Datum {
   totalInstallments: Int,
 }
 
-pub type Rewards_Redeemer {
+pub type Rewards_Datum {
+  beneficiary: Address,
+  vestingAsset: AssetClass,
+  totalVestingQty: Int,
+  vestingPeriodStart: Int,
+  vestingPeriodEnd: Int,
+  firstUnlockPossibleAfter: Int,
+  totalInstallments: Int,
+  treeNumber: Int,
+}
+
+pub type VestingRedeemer {
   PartialUnlock
   FullUnlock
 }
+
+pub type Rewards_Redeemer {
+  Partial_Unlock
+  Full_Unlock
+}
+
+//******************************************
+//********* minting policy types ********
+//******************************************
 
 pub type Action {
   Mint

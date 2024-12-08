@@ -3,16 +3,16 @@ use aiken/collection/list
 use cardano/address.{VerificationKey}
 use cardano/assets.{quantity_of}
 use cardano/transaction.{Output, OutputReference, Transaction}
-use types.{FullUnlock, PartialUnlock, Rewards_Datum, VestingRedeemer}
+use types.{FullUnlock, PartialUnlock, VestingDatum, VestingRedeemer}
 use utils.{
   divide_ceil_int, find_own_input, must_be_signed_by, must_start_after,
   time_remaining_before_dealine,
 }
 use validation/count.{inputs_by_vkh}
 
-validator rewards_validator {
+validator linearvesting_validator {
   spend(
-    datum: Option<Rewards_Datum>,
+    datum: Option<VestingDatum>,
     redeemer: VestingRedeemer,
     own_ref: OutputReference,
     self: Transaction,
@@ -29,12 +29,12 @@ validator rewards_validator {
 }
 
 fn validate_partial_unlock(
-  datum: Option<Rewards_Datum>,
+  datum: Option<VestingDatum>,
   own_ref: OutputReference,
   self: Transaction,
 ) -> Bool {
   let Transaction { inputs, outputs, validity_range, .. } = self
-  expect Some(Rewards_Datum {
+  expect Some(VestingDatum {
     beneficiary,
     vestingAsset,
     totalVestingQty,
@@ -42,7 +42,6 @@ fn validate_partial_unlock(
     vestingPeriodEnd,
     firstUnlockPossibleAfter,
     totalInstallments,
-    ..
   }) = datum
 
   //find input based on the outref and deconstruct
@@ -118,11 +117,11 @@ fn validate_partial_unlock(
 }
 
 fn validate_full_unlock(
-  datum: Option<Rewards_Datum>,
+  datum: Option<VestingDatum>,
   _own_ref: OutputReference,
   self: Transaction,
 ) -> Bool {
-  expect Some(Rewards_Datum { beneficiary, vestingPeriodEnd, .. }) = datum
+  expect Some(VestingDatum { beneficiary, vestingPeriodEnd, .. }) = datum
 
   //asert there is a vkh and the signature of the transaction and the beneficiary match
   expect VerificationKey(vkh) = beneficiary.payment_credential

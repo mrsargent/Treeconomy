@@ -18,27 +18,23 @@ export default async function handler(
     //*********  establish network and wallet connection ***************/
     //**************************************************************** */
     const initLucid = async () => {
-      if (process.env.NODE_ENV === "development") {
-        // const b = new Blockfrost(
-        //   process.env.API_URL_PREPROD as string,
-        //   process.env.BLOCKFROST_KEY_PREPROD as string
-        // );
+      if (process.env.NODE_ENV === "development") {      
         const b =  new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
         );
         return Lucid(b, "Preprod");
       } else {
-        const b = new Blockfrost(
-          process.env.API_URL_MAINNET!,
-          process.env.BLOCKFROST_KEY_MAINNET!
+        const b =  new Kupmios(
+          process.env.KUPO_ENDPOINT_PREPROD!,
+          process.env.OGMIOS_ENDPOINT_PREPROD!
         );
         return Lucid(b, "Mainnet");
       }
 
     };
     const lucid = await initLucid();
-    const { TokenName, address, compiledCodeNFT, compiledCodeToken }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, seedNo, species }: InitialMintConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -51,7 +47,7 @@ export default async function handler(
     console.log("pkh: ", pkh);
     console.log("pkh1: ", pkh1);
     const compiledNft = scripts.validators.find(
-      (v) => v.title === "initialmint1.init_mint_nft.mint",
+      (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
 
     const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);
@@ -68,7 +64,7 @@ export default async function handler(
     //*********  constructing token minting policy with params ***************/
     //**************************************************************** */   
     const compiledToken = scripts.validators.find(
-      (v) => v.title === "initialmint.init_mint_token.mint",
+      (v) => v.title === tokenMintPolicyName,
     )?.compiledCode;
 
     const mintingTokenpolicy: MintingPolicy = {
@@ -83,7 +79,7 @@ export default async function handler(
     //*********  constructing validator with data ***************/
     //**************************************************************** */
     const compiledValidators = scripts.validators.find(
-      (v) => v.title === "rewards_validator.rewards_validator.spend",
+      (v) => v.title === rewardsValidatorName,
     )?.compiledCode;
 
     const rewardsValidator: Validator = {
@@ -183,9 +179,9 @@ export default async function handler(
       .attachMetadata(721, {
         [mintingNFTPolicyId]: {
           [formattedName]: {
-            name: "Seed NFT 12",
+            name: "Seed NFT " + seedNo,
             image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-            description: "No: 11 Tree species: pecan"
+            description: "No: " + seedNo + " Tree species: " + species
           }
         }
       })

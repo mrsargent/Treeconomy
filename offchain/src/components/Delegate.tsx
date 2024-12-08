@@ -8,13 +8,16 @@ import {
   Lucid,
   UTxO
 } from "@lucid-evolution/lucid";
-import { aggregateTokens, BuyNFTConfig, hexToString, InitialMintConfig, LockNFTConfig, NFTMinterConfig, parseAssetId, Token, WithdrawNFTConfig } from "../pages/api/apitypes";
+import { aggregateTokens, BurnConfig, hexToString, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
 import axios from 'axios';
 
 
 
-type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn"
+type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn";
+const NFT_MINT_POLICY = "initialmint1.init_mint_nft.mint";
+const TOKEN_MINT_POLICY = "initialmint.init_mint_token.mint";
+const REWARDS_VALIDATOR = "rewards_validator.rewards_validator.spend";
 
 const Delegate = async () => {
 
@@ -77,7 +80,14 @@ const Delegate = async () => {
 
         if (param === "Mint") {
           console.log("Im in mint");
-          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+          const body: InitialMintConfig = {
+            address: usedAddresses[0],
+            nftMintPolicyName: NFT_MINT_POLICY,
+            tokenMintPolicyName: TOKEN_MINT_POLICY,
+            rewardsValidatorName: REWARDS_VALIDATOR,
+            seedNo: "32",
+            species: "Oak"
+          };
           response = await fetch("/api/mintinitialseed", {
             method: "POST",
             headers: {
@@ -89,7 +99,10 @@ const Delegate = async () => {
         }
         if (param === "Withdraw") {
           console.log("Im in withdraw");
-          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+          const body: WithdrawConfig = {
+            address: usedAddresses[0],
+            rewardsValidatorName: REWARDS_VALIDATOR
+          };
           response = await fetch("/api/redeemrewards", {
             method: "POST",
             headers: {
@@ -101,7 +114,11 @@ const Delegate = async () => {
         }
         if (param === "BurnMintSapling") {
           console.log("Im in BurnMintSapling");
-          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+          const body: MintBurnConfig = {
+            address: usedAddresses[0],
+            nftMintPolicyName: NFT_MINT_POLICY,
+            burnAssetName: "f5c2952613b78f05b735b568d99270c8"
+          };
           response = await fetch("/api/mintburnnft", {
             method: "POST",
             headers: {
@@ -111,8 +128,11 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
-        if (param === "Burn") {        
-          const body: InitialMintConfig = { TokenName: "Seed_", address: usedAddresses[0], compiledCodeNFT: "", compiledCodeToken: "" };        
+        if (param === "Burn") {
+          const body: BurnConfig = {
+            address: usedAddresses[0],
+            nftMintPolicyName: NFT_MINT_POLICY
+          };
           response = await fetch("/api/burnnft", {
             method: "POST",
             headers: {
@@ -122,29 +142,26 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
-       
 
-          if (response){
-            console.log("finished with api");
-            const { tx } = await response.json();
-           
-            const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
-            const txh = await signedTx.submit();
-            console.log(txh);
-          }    
-         
-       
-        
-       
+        if (response) {
+          console.log("finished with api");
+          const { tx } = await response.json();
+
+          const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
+          const txh = await signedTx.submit();
+          console.log(txh);
+        }
+
+
       } catch (error) {
         console.log(error);
-        console.error(JSON.stringify(error, null, 2)); 
+        console.error(JSON.stringify(error, null, 2));
       }
     }
   };
 
 
- 
+
   return (
     <>
       {isConnected ? (

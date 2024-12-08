@@ -1,14 +1,13 @@
 import { Blockfrost, fromText, Lucid, UTxO, Validator, Data, validatorToAddress, toUnit, OutRef, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig } from "./apitypes";
+import { AssetClass, InitialMintConfig, WithdrawConfig } from "./apitypes";
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, RewardsDatum, VestingRedeemer } from "./schemas";
 import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
 import { ONE_HOUR_MS, ONE_MIN_MS, TIME_TOLERANCE_MS, TreeToken } from "@/Utils/constants";
 import { POSIXTime } from "@/Utils/types";
 
-//TODO: 1. make minting policy id a variable somehow
-// 2. change all networks to variable
+//TODO: 1. need to figure out which utxo is which
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,34 +18,23 @@ export default async function handler(
     //*********  establish network and wallet connection ***************/
     //**************************************************************** */
     const initLucid = async () => {
-      if (process.env.NODE_ENV === "development") {
-        // const b = new Blockfrost(
-        //   process.env.API_URL_PREPROD as string,
-        //   process.env.BLOCKFROST_KEY_PREPROD as string
-        // );
-        // const b = new Maestro({
-        //   network: "Preprod", // For MAINNET: "Mainnet"
-        //   apiKey: process.env.MAESTRO_KEY_PREPROD!, // Get yours by visiting https://docs.gomaestro.org/docs/Getting-started/Sign-up-login
-        //   turboSubmit: false, // Read about paid turbo transaction submission feature at https://docs.gomaestro.org/docs/Dapp%20Platform/Turbo%20Transaction
-        // });
-
+      if (process.env.NODE_ENV === "development") { 
         const b =  new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
-        );
-     
+        );     
         return Lucid(b, "Preprod");
       } else {
-        const b = new Blockfrost(
-          process.env.API_URL_MAINNET!,
-          process.env.BLOCKFROST_KEY_MAINNET!
+        const b =  new Kupmios(
+          process.env.KUPO_ENDPOINT_PREPROD!,
+          process.env.OGMIOS_ENDPOINT_PREPROD!
         );
         return Lucid(b, "Mainnet");
       }
 
     };
     const lucid = await initLucid();
-    const { TokenName, address, compiledCodeNFT, compiledCodeToken }: InitialMintConfig = req.body;
+    const { address, rewardsValidatorName }: WithdrawConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -56,7 +44,7 @@ export default async function handler(
     //*********  constructing validator with data ***************/
     //**************************************************************** */
     const compiledValidators = scripts.validators.find(
-      (v) => v.title === "rewards_validator.rewards_validator.spend",
+      (v) => v.title === rewardsValidatorName,
     )?.compiledCode;
 
     const rewardsValidator: Validator = {
@@ -73,25 +61,9 @@ export default async function handler(
     }
     console.log("contract address: ", contractAddr);
 
-    const vestingAsset: AssetClass = {
-      policyId: "d5f1c35b3052da146eb62c6899db029c337e97a8d258ff6e43a04180",
-      tokenName: fromText(TreeToken)
-    }
     const currentTime: POSIXTime = Date.now();
     console.log("current time: ",currentTime);
     
-
-    const rewardsDatum = Data.to(
-      {
-        beneficiary: fromAddress(address),
-        vestingAsset: vestingAsset,
-        totalVestingQty: 10_000n,
-        vestingPeriodStart: BigInt(currentTime),
-        vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
-        firstUnlockPossibleAfter: BigInt(currentTime + ONE_MIN_MS),
-        totalInstallments: 3n
-      }, RewardsDatum
-    );
     
     // *****************************************************************/
     //*********  construct stuff ***************/

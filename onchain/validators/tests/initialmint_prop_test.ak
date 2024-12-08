@@ -4,13 +4,16 @@ use aiken/fuzz
 use aiken/primitive/bytearray
 use cardano/address.{Address, VerificationKey}
 use cardano/addresses
-use cardano/assets.{AssetName, PolicyId, Value, from_asset}
+use cardano/assets.{
+  AssetName, PolicyId, Value, ada_asset_name, ada_policy_id, from_asset,
+}
 use cardano/transaction.{
   InlineDatum, Input, NoDatum, Output, OutputReference, Transaction,
 }
 use initialmint
 use tests/fake_tx
 use tests/utils_test
+use types.{Burn, Mint, MintRedeemer}
 
 //********************************************************************************
 //******************** initial mint NFT minting polciy prop tests ****************
@@ -22,13 +25,12 @@ test initialmint_nft_test(param via generate_initial_mint_nft()) {
     out_ref
       |> builtin.serialise_data
       |> builtin.sha2_256
+      |> bytearray.take(16)
 
-  let mint_val: Value =
-    from_asset(
-      policy_id: pid,
-      asset_name: bytearray.take(hashed_asset_name, 16),
-      quantity: 1,
-    )
+  let mint_val =
+    from_asset(ada_policy_id, ada_asset_name, 100000)
+      |> assets.add(pid, hashed_asset_name, 1)
+      |> assets.add(pid, "SaplingNFT", -1)
 
   expect VerificationKey(vkh) = addr.payment_credential
   let signature: VerificationKeyHash = vkh
@@ -44,7 +46,45 @@ test initialmint_nft_test(param via generate_initial_mint_nft()) {
           }
         }
 
-  initialmint.init_mint_nft.mint(signature, out_ref, pid, test_trans)
+  let redeemer: MintRedeemer = MintRedeemer { out_ref, action: Mint }
+
+  initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
+}
+
+//********************************************************************************
+//******************** initial burn NFT minting polciy prop tests ****************
+//********************************************************************************
+
+test initialburn_nft_test(param via generate_initial_mint_nft()) {
+  let InitialNFTMintTest { addr, out_ref, inputs, pid } = param
+  let hashed_asset_name =
+    out_ref
+      |> builtin.serialise_data
+      |> builtin.sha2_256
+      |> bytearray.take(16)
+
+  let mint_val =
+    from_asset(ada_policy_id, ada_asset_name, 100000)
+      |> assets.add(pid, hashed_asset_name, 1)
+      |> assets.add(pid, "SaplingNFT", -1)
+
+  expect VerificationKey(vkh) = addr.payment_credential
+  let signature: VerificationKeyHash = vkh
+
+  let test_trans: Transaction =
+    transaction.placeholder
+      |> fn(transaction) {
+          Transaction {
+            ..transaction,
+            inputs: inputs,
+            mint: mint_val,
+            extra_signatories: [signature],
+          }
+        }
+
+  let redeemer: MintRedeemer = MintRedeemer { out_ref, action: Burn }
+
+  initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
 }
 
 //********************************************************************************
