@@ -13,7 +13,7 @@ export type InitialMintConfig = {
   nftMintPolicyName: string;
   tokenMintPolicyName: string;
   rewardsValidatorName: string;
-  seedNo: string;
+  treeNumber: number;
   species: string;
 };
 
@@ -21,6 +21,7 @@ export type InitialMintConfig = {
 export type WithdrawConfig = {
   address: string;
   rewardsValidatorName: string;
+  treeNumber: number;
 };
 
 export type MintBurnConfig = {

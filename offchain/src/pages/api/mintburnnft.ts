@@ -1,7 +1,7 @@
 import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { AssetClass, InitialMintConfig, MintBurnConfig } from "./apitypes";
-import { getFirstUxtoWithAda } from "./getFirstUtxo";
+import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./schemas";
@@ -121,7 +121,7 @@ export default async function handler(
         [mintingNFTPolicyId]: {
           [formattedName]: {
             name: "Sapling NFT 2",
-            image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
+            image: "https://capacitree.com/wp-content/uploads/2024/12/tree2.jpg",
             description: "No: 1 Tree species: pecan"
           }
         }

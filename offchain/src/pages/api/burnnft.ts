@@ -1,7 +1,7 @@
 import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { AssetClass, BurnConfig, InitialMintConfig } from "./apitypes";
-import { getFirstUxtoWithAda } from "./getFirstUtxo";
+import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./schemas";

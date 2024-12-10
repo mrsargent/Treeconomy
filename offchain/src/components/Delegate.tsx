@@ -2,22 +2,23 @@
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import {
-  Assets,
   Emulator,
-  fromUnit,
   Lucid,
   UTxO
 } from "@lucid-evolution/lucid";
-import { aggregateTokens, BurnConfig, hexToString, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
+import { aggregateTokens, BurnConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
-import axios from 'axios';
+import TreeSpeciesSelector from "./TreeSpeciesSelector";
 
 
 
 type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn";
-const NFT_MINT_POLICY = "initialmint1.init_mint_nft.mint";
+const NFT_MINT_POLICY = "initialmint.init_mint_nft.mint";
 const TOKEN_MINT_POLICY = "initialmint.init_mint_token.mint";
 const REWARDS_VALIDATOR = "rewards_validator.rewards_validator.spend";
+const TREE_NUM = 55;
+const TREE_SPECIES = "Oak";
+const TREE_DESCRIPTION = "No: " + TREE_NUM + " Species: " + TREE_SPECIES;
 
 const Delegate = async () => {
 
@@ -28,6 +29,8 @@ const Delegate = async () => {
   const { isConnected, usedAddresses, enabledWallet } = useCardano({
     limitNetwork: network,
   });
+
+  const [treeSpecies, setTreeSpecies] = useState('oak');
 
 
   const getWalletTokens = async (): Promise<Record<string, Token>> => {
@@ -85,8 +88,8 @@ const Delegate = async () => {
             nftMintPolicyName: NFT_MINT_POLICY,
             tokenMintPolicyName: TOKEN_MINT_POLICY,
             rewardsValidatorName: REWARDS_VALIDATOR,
-            seedNo: "32",
-            species: "Oak"
+            treeNumber: TREE_NUM,
+            species: TREE_SPECIES
           };
           response = await fetch("/api/mintinitialseed", {
             method: "POST",
@@ -101,7 +104,8 @@ const Delegate = async () => {
           console.log("Im in withdraw");
           const body: WithdrawConfig = {
             address: usedAddresses[0],
-            rewardsValidatorName: REWARDS_VALIDATOR
+            rewardsValidatorName: REWARDS_VALIDATOR,
+            treeNumber: TREE_NUM
           };
           response = await fetch("/api/redeemrewards", {
             method: "POST",
@@ -117,7 +121,7 @@ const Delegate = async () => {
           const body: MintBurnConfig = {
             address: usedAddresses[0],
             nftMintPolicyName: NFT_MINT_POLICY,
-            burnAssetName: "f5c2952613b78f05b735b568d99270c8"
+            burnAssetName: "c099c9e906d7f00ffcf9ec53ecac61c3"
           };
           response = await fetch("/api/mintburnnft", {
             method: "POST",
@@ -169,9 +173,13 @@ const Delegate = async () => {
 
           <div className="flex flex-col items-center w-1/2">
             <h2 className="text-lg font-semibold mb-4">Functions</h2>
-            <button className="btn btn-primary mb-4" onClick={() => handleAPI("Mint")}>
-              Mint Seed NFT
-            </button>
+            <div className="flex items-center mb-4">
+              <button className="btn btn-primary" onClick={() => handleAPI("Mint")}>
+                Mint Seed NFT
+              </button>
+              <span className="ml-2">{TREE_NUM}</span>
+              <TreeSpeciesSelector onSelect={setTreeSpecies} />
+            </div>
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("Withdraw")}>
               Collect Rewards
             </button>

@@ -1,7 +1,7 @@
 import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { AssetClass, InitialMintConfig } from "./apitypes";
-import { getFirstUxtoWithAda } from "./getFirstUtxo";
+import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./schemas";
@@ -34,7 +34,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, seedNo, species }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, treeNumber, species }: InitialMintConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -112,8 +112,9 @@ export default async function handler(
         totalVestingQty: 10_000n,
         vestingPeriodStart: BigInt(currentTime),
         vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
-        firstUnlockPossibleAfter: BigInt(currentTime + ONE_MIN_MS),
-        totalInstallments: 3n
+        firstUnlockPossibleAfter: BigInt(currentTime),
+        totalInstallments: 3n,
+        treeNumer: BigInt(treeNumber),
       }, RewardsDatum
     );
 
@@ -179,9 +180,9 @@ export default async function handler(
       .attachMetadata(721, {
         [mintingNFTPolicyId]: {
           [formattedName]: {
-            name: "Seed NFT " + seedNo,
+            name: "Seed NFT " + treeNumber,
             image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-            description: "No: " + seedNo + " Tree species: " + species
+            description: "No: " + treeNumber + " Tree species: " + species
           }
         }
       })

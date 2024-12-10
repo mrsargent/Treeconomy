@@ -107,7 +107,8 @@ const RewardsSchema = Data.Object({
   vestingPeriodStart: Data.Integer(),
   vestingPeriodEnd: Data.Integer(),
   firstUnlockPossibleAfter: Data.Integer(),
-  totalInstallments: Data.Integer()
+  totalInstallments: Data.Integer(),
+  treeNumer: Data.Integer()
 });
 
 export type RewardsDatum = Data.Static<typeof RewardsSchema>;

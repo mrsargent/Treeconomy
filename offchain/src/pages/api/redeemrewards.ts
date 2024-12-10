@@ -1,13 +1,14 @@
-import { Blockfrost, fromText, Lucid, UTxO, Validator, Data, validatorToAddress, toUnit, OutRef, Kupmios } from "@lucid-evolution/lucid";
+import { Lucid, UTxO, Validator, Data, validatorToAddress, toUnit, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig, WithdrawConfig } from "./apitypes";
+import { WithdrawConfig } from "./apitypes";
 import scripts from '../../../../onchain/plutus.json';
-import { fromAddress, RewardsDatum, VestingRedeemer } from "./schemas";
+import { RewardsDatum, VestingRedeemer } from "./schemas";
 import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
-import { ONE_HOUR_MS, ONE_MIN_MS, TIME_TOLERANCE_MS, TreeToken } from "@/Utils/constants";
+import { TIME_TOLERANCE_MS } from "@/Utils/constants";
 import { POSIXTime } from "@/Utils/types";
+import { getUtxoByTreeNo } from "./fingUtxoFunctions";
 
-//TODO: 1. need to figure out which utxo is which
+
 
 export default async function handler(
   req: NextApiRequest,
@@ -34,7 +35,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, rewardsValidatorName }: WithdrawConfig = req.body;
+    const { address, rewardsValidatorName, treeNumber }: WithdrawConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -70,14 +71,16 @@ export default async function handler(
     //**************************************************************** */
 
     //****** test out ref for first test to make sure things work */
-    const out_ref: OutRef = {
-      txHash: "4054cabbd2604c32e2eb64b67ecbf9ed89d3bd55c8465da5b42c1db28f253ad7",
-      outputIndex: 1
-    };
+    // const out_ref: OutRef = {
+    //   txHash: "4054cabbd2604c32e2eb64b67ecbf9ed89d3bd55c8465da5b42c1db28f253ad7",
+    //   outputIndex: 1
+    // };
 
     //*********************** */
-    const vestingUTXO: UTxO = (await lucid.utxosByOutRef([out_ref]))[0];
+    //const vestingUTXO: UTxO = (await lucid.utxosByOutRef([out_ref]))[0];
+    const vestingUTXO: UTxO | undefined = await getUtxoByTreeNo(lucid,contractAddr,treeNumber);
 
+    console.log("Tree utxo hash: ", vestingUTXO?.txHash, " index: ",vestingUTXO?.outputIndex);
 
     if (!vestingUTXO){
       console.log("no utxo in script");
