@@ -9,6 +9,7 @@ import {
 import { aggregateTokens, BurnConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
 import TreeSpeciesSelector from "./TreeSpeciesSelector";
+import { User } from "@prisma/client";
 
 
 
@@ -31,6 +32,10 @@ const Delegate = async () => {
   });
 
   const [treeSpecies, setTreeSpecies] = useState('oak');
+
+  const [treeDetails, setTreeDetails] = useState<User>();
+
+  const [withdrawNumber, setWithdrawNumber] = useState<number | undefined>();
 
 
   const getWalletTokens = async (): Promise<Record<string, Token>> => {
@@ -88,8 +93,8 @@ const Delegate = async () => {
             nftMintPolicyName: NFT_MINT_POLICY,
             tokenMintPolicyName: TOKEN_MINT_POLICY,
             rewardsValidatorName: REWARDS_VALIDATOR,
-            treeNumber: TREE_NUM,
-            species: TREE_SPECIES
+            //  treeNumber: treeDetails!.treeNumber,
+            species: treeSpecies
           };
           response = await fetch("/api/mintinitialseed", {
             method: "POST",
@@ -105,7 +110,7 @@ const Delegate = async () => {
           const body: WithdrawConfig = {
             address: usedAddresses[0],
             rewardsValidatorName: REWARDS_VALIDATOR,
-            treeNumber: TREE_NUM
+            treeNumber: withdrawNumber!
           };
           response = await fetch("/api/redeemrewards", {
             method: "POST",
@@ -121,7 +126,7 @@ const Delegate = async () => {
           const body: MintBurnConfig = {
             address: usedAddresses[0],
             nftMintPolicyName: NFT_MINT_POLICY,
-            burnAssetName: "c099c9e906d7f00ffcf9ec53ecac61c3"
+            burnAssetName: treeDetails!.seedNftName
           };
           response = await fetch("/api/mintburnnft", {
             method: "POST",
@@ -149,11 +154,13 @@ const Delegate = async () => {
 
         if (response) {
           console.log("finished with api");
-          const { tx } = await response.json();
-
+          const { tx, newTree } = await response.json();
           const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
           const txh = await signedTx.submit();
           console.log(txh);
+
+          //set new details of Tree that was just created
+          setTreeDetails(newTree);
         }
 
 
@@ -177,12 +184,24 @@ const Delegate = async () => {
               <button className="btn btn-primary" onClick={() => handleAPI("Mint")}>
                 Mint Seed NFT
               </button>
-              <span className="ml-2">{TREE_NUM}</span>
+              <span className="ml-2">{treeDetails?.treeNumber || "No Tree"}</span>
               <TreeSpeciesSelector onSelect={setTreeSpecies} />
             </div>
-            <button className="btn btn-primary mb-4" onClick={() => handleAPI("Withdraw")}>
+            <div className="flex items-center mb-4">
+              <input
+                type="number"
+                value={withdrawNumber || ''}
+                onChange={(e) => setWithdrawNumber(e.target.value ? parseInt(e.target.value) : undefined)}
+                className="input input-bordered w-20 mr-2"
+                placeholder="Tree #"
+              />
+              <button className="btn btn-primary" onClick={() => handleAPI("Withdraw")}>
+                Collect Rewards
+              </button>
+            </div>
+            {/* <button className="btn btn-primary mb-4" onClick={() => handleAPI("Withdraw")}>
               Collect Rewards
-            </button>
+            </button> */}
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("BurnMintSapling")}>
               Seed - Sapling
             </button>

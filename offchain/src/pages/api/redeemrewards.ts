@@ -39,7 +39,7 @@ export default async function handler(
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
-
+    console.log("Tree number: ", treeNumber);
 
     // *****************************************************************/
     //*********  constructing validator with data ***************/

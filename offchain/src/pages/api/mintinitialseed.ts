@@ -7,6 +7,7 @@ import scripts from '../../../../onchain/plutus.json';
 import { fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./schemas";
 import { POSIXTime } from "@/Utils/types";
 import { ONE_HOUR_MS, ONE_MIN_MS, TreeToken } from "@/Utils/constants";
+import prisma from "../../../prisma/client";
 
 
 export default async function handler(
@@ -18,14 +19,14 @@ export default async function handler(
     //*********  establish network and wallet connection ***************/
     //**************************************************************** */
     const initLucid = async () => {
-      if (process.env.NODE_ENV === "development") {      
-        const b =  new Kupmios(
+      if (process.env.NODE_ENV === "development") {
+        const b = new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
         );
         return Lucid(b, "Preprod");
       } else {
-        const b =  new Kupmios(
+        const b = new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
         );
@@ -34,9 +35,11 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, treeNumber, species }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, species }: InitialMintConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
+
+
 
     // *****************************************************************/
     //*********  constructing NFT minting policy with params ***************/
@@ -75,7 +78,59 @@ export default async function handler(
     const mintingTokenPolicyId = mintingPolicyToId(mintingTokenpolicy);
     console.log("policy id: ", mintingTokenPolicyId);
 
+
     // *****************************************************************/
+    //*********  find utxo and construct redeemer ***************/
+    //**************************************************************** */
+
+    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
+    console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
+    let nftRedeemer, hashedData, nftName
+
+    if (goodUtxo !== undefined) {
+      const myData = {
+        transaction_id: goodUtxo.txHash,
+        output_index: BigInt(goodUtxo.outputIndex)
+      }
+
+      nftRedeemer = Data.to({
+        out_ref: myData,
+        action: "Mint"
+      }, MintRedeemer);
+
+      nftName = Data.to(myData, OutputReference);
+      hashedData = toHex(sha256(fromHex(nftName)));
+
+    } else {
+      console.log("not good utxo found");
+      res.status(401).json({ error: "Couldn't find utxo" });
+      return;
+    }
+    const formattedName = hashedData.slice(0, 32);
+    console.log("Enc: ", formattedName);
+    const tokenRedeemer = Data.to(new Constr(0, [[]]));
+
+    // *****************************************************************/
+    //*********  creat new tree in database  ***************/
+    //**************************************************************** */
+
+    const userCount = await prisma.user.count();
+    console.log("User Count: ", userCount);
+
+    const newTree = await prisma.user.create({
+      data: {
+        treeNumber: userCount + 1,
+        species: species,
+        seedNftName: formattedName,
+        saplingNftName: null,
+        treeNftName: null,
+        createdAt: new Date
+      }
+    });
+
+    console.log("tree number: ", newTree.treeNumber);
+
+     // *****************************************************************/
     //*********  constructing validator with data ***************/
     //**************************************************************** */
     const compiledValidators = scripts.validators.find(
@@ -103,8 +158,6 @@ export default async function handler(
     const currentTime: POSIXTime = Date.now();
     console.log("current time: ", currentTime);
 
-
-
     const rewardsDatum = Data.to(
       {
         beneficiary: fromAddress(address),
@@ -114,41 +167,9 @@ export default async function handler(
         vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
         firstUnlockPossibleAfter: BigInt(currentTime),
         totalInstallments: 3n,
-        treeNumer: BigInt(treeNumber),
+        treeNumer: BigInt(newTree.treeNumber),
       }, RewardsDatum
     );
-
-    // *****************************************************************/
-    //*********  find utxo and construct redeemer ***************/
-    //**************************************************************** */
-
-    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
-    console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
-    let nftRedeemer, hashedData, nftName 
-
-    if (goodUtxo !== undefined) {
-      const myData = {
-        transaction_id: goodUtxo.txHash,
-        output_index: BigInt(goodUtxo.outputIndex)
-      }
-
-      nftRedeemer = Data.to({
-        out_ref: myData,
-        action: "Mint"
-      }, MintRedeemer);
-
-      nftName = Data.to(myData, OutputReference);     
-      hashedData = toHex(sha256(fromHex(nftName)));     
-
-    } else {
-      console.log("not good utxo found");
-      res.status(401).json({ error: "Couldn't find utxo" });
-      return;
-    }
-    const formattedName = hashedData.slice(0, 32);
-    console.log("Enc: ", formattedName);
-    const tokenRedeemer = Data.to(new Constr(0, [[]]));
-
 
     // *****************************************************************/
     //*********  constructing transaction ******************************/
@@ -180,17 +201,20 @@ export default async function handler(
       .attachMetadata(721, {
         [mintingNFTPolicyId]: {
           [formattedName]: {
-            name: "Seed NFT " + treeNumber,
+            name: "Seed NFT " + newTree.treeNumber,
             image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-            description: "No: " + treeNumber + " Tree species: " + species
+            description: "No: " + newTree.treeNumber + " Tree species: " + newTree.species
           }
         }
       })
       .addSigner(address)
-      .complete({ localUPLCEval: false })
+      .complete({ localUPLCEval: false });
 
 
-    res.status(200).json({ tx: tx.toCBOR() });
+    res.status(200).json({
+      tx: tx.toCBOR(),
+      newTree: newTree
+    });
   } else {
     res.status(405).json({ error: "Method not allowed" });
   }

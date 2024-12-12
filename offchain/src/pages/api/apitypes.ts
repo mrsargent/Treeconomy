@@ -13,7 +13,7 @@ export type InitialMintConfig = {
   nftMintPolicyName: string;
   tokenMintPolicyName: string;
   rewardsValidatorName: string;
-  treeNumber: number;
+  //treeNumber: number;
   species: string;
 };
 
