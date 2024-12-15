@@ -4,6 +4,6 @@ Todo list
 2. Make sure only claim from contract if obtain tree NFT
 3. remove beneficiary from datum in contract so anyone with tree NFT can claim reward
 --- done 4. add tree number to datum and find utxo based on tree number  done
-5. create database with tree number, species, name of seed, sapling, tree NFT
+--- done 5. create database with tree number, species, name of seed, sapling, tree NFT
 6. find way to read tree number from database and use in var throughout the program... 
         same wiht assetname of seed and sapling for burning purposes.  

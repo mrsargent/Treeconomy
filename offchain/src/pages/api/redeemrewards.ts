@@ -40,7 +40,6 @@ export default async function handler(
     lucid.selectWallet.fromAddress(address, [])
 
     console.log("Tree number: ", treeNumber);
-
     // *****************************************************************/
     //*********  constructing validator with data ***************/
     //**************************************************************** */
@@ -79,7 +78,6 @@ export default async function handler(
     //*********************** */
     //const vestingUTXO: UTxO = (await lucid.utxosByOutRef([out_ref]))[0];
     const vestingUTXO: UTxO | undefined = await getUtxoByTreeNo(lucid,contractAddr,treeNumber);
-
     console.log("Tree utxo hash: ", vestingUTXO?.txHash, " index: ",vestingUTXO?.outputIndex);
 
     if (!vestingUTXO){
@@ -174,7 +172,7 @@ export default async function handler(
       } else {
         console.log("Doing partial unlock unlock");
         tx = await lucid
-          .newTx()
+          .newTx()        
           .collectFrom([vestingUTXO], rewardsRedeemer)
           .attach.SpendingValidator(rewardsValidator)
           .pay.ToAddress(beneficiaryAddress, {
