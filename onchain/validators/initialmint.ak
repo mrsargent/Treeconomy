@@ -1,17 +1,16 @@
-use aiken/builtin
+use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{Blake2b_224, Hash, VerificationKey, VerificationKeyHash}
-use aiken/primitive/bytearray
+use aiken/crypto.{VerificationKeyHash}
 use cardano/assets.{PolicyId, tokens}
-use cardano/transaction.{Input, Transaction}
-use cardano/value.{prove_exact_nft}
+use cardano/transaction.{Input, OutputReference, Transaction}
+use cardano/value
 use types.{Burn, Mint, MintRedeemer}
 use utils
 
-validator init_mint_nft(owner: Hash<Blake2b_224, VerificationKey>) {
+validator init_mint_nft(owner: VerificationKeyHash) {
   mint(redeemer: MintRedeemer, policy_id: PolicyId, self: Transaction) {
-    let MintRedeemer { out_ref, action } = redeemer
+    let MintRedeemer { out_ref, action, prefix, treeNumber } = redeemer
     let signed_by_program = list.has(self.extra_signatories, owner)
 
     let Transaction { inputs, mint, .. } = self
@@ -21,15 +20,28 @@ validator init_mint_nft(owner: Hash<Blake2b_224, VerificationKey>) {
         //find if input out_ref matches the out_ref provided by the redeemer
         expect Some(_input) =
           list.find(inputs, fn(input) { input.output_reference == out_ref })
+
         //serialize out_ref and take the first 32 chars to compare with name of 
         //provided token
-        let serialized_redeemer =
-          out_ref
-            |> builtin.serialise_data
-            |> builtin.sha2_256
-            |> bytearray.take(16)
+        // let serialized_redeemer =
+        //   out_ref
+        //     |> builtin.serialise_data
+        //     |> builtin.sha2_256
+        //     |> bytearray.take(16)
+        // let qty_asset_name_correct =
+        //   prove_exact_nft(mint, policy_id, serialized_redeemer)
+        let OutputReference { transaction_id, output_index } = out_ref
+        let asset_name =
+          value.unique_token_name(
+            transaction_id,
+            output_index,
+            prefix,
+            treeNumber,
+          )
+        trace cbor.diagnostic(asset_name)
         let qty_asset_name_correct =
-          prove_exact_nft(mint, policy_id, serialized_redeemer)
+          value.prove_exact_nft(mint, policy_id, asset_name)
+
         and {
           signed_by_program?,
           qty_asset_name_correct?,

@@ -7,3 +7,9 @@ export const PROTOCOL_FEE = 0.01;
 
 export const TreeToken: string = "Treeconomy Token";
 export const TIME_TOLERANCE_MS = 100000;
+
+export const assetNameLabels = {
+    prefix100: "000643b0",
+    prefix222: "000de140",
+  }
+  

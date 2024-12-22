@@ -6,6 +6,7 @@ import {
     credentialToAddress,
     Data,
     Emulator,
+    fromHex,
     generateSeedPhrase,
     getAddressDetails,
     keyHashToCredential,
@@ -20,6 +21,8 @@ import {
 
 import { Either, ReadableUTxO, Result } from "./types.js";
 import { AddressObject } from "@/pages/api/schemas.js";
+import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils";
+import { sha3_256 } from "@noble/hashes/sha3";
 
 
 export const utxosAtScript = async (
@@ -208,4 +211,46 @@ export const replacer = (_key: unknown, value: unknown) =>
 
 export const divCeil = (a: bigint, b: bigint) => {
     return 1n + (a - 1n) / b;
+};
+
+export function uniqueTokenName(
+    txid: Uint8Array, 
+    idx: number, 
+    prefix: Uint8Array, 
+    personal: Uint8Array
+  ): Uint8Array {
+    // Prefix the txid with the index
+    let prependIndex = new Uint8Array(txid.length + 1);
+    prependIndex.set([idx], 0); // Assuming idx is a single byte for simplicity
+    prependIndex.set(txid, 1);
+  
+    // Trim personal to max length of 15 bytes
+    let trimmedPersonal = personal.slice(0, Math.min(personal.length, 15));
+  
+    // Concatenate the name
+    let result = new Uint8Array(prefix.length + trimmedPersonal.length + prependIndex.length);
+    result.set(prefix, 0);
+    result.set(trimmedPersonal, prefix.length);
+    result.set(prependIndex, prefix.length + trimmedPersonal.length);
+    
+    
+    // Slice off to 32 bytes, returning only the first 31 bytes
+    return result.slice(0, 31);
+  }
+
+  export const generateUniqueAssetName = (utxo: UTxO, prefix: string): string => {
+    // sha3_256 hash of the tx id
+    //const txIdHash = sha3_256(hexToBytes(utxo.txHash));
+
+    // prefix the txid hash with the index
+    const indexByte = new Uint8Array([utxo.outputIndex]);
+    const prependIndex = concatBytes(indexByte,hexToBytes(utxo.txHash));
+
+    if (prefix != null) {
+        // concat the prefix
+        const prependPrefix = concatBytes(hexToBytes(prefix), prependIndex);
+        return bytesToHex(prependPrefix.slice(0, 32));
+    } else {
+        return bytesToHex(prependIndex.slice(0, 32));
+    }
 };

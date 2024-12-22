@@ -57,10 +57,10 @@ export default async function handler(
     const lucid = await initLucid();
     const { address, nftMintPolicyName, burnAssetName }: MintBurnConfig = req.body;
     console.log(address);
-    lucid.selectWallet.fromAddress(address, [])
-
-    const pid = "6f960d381c54c0c24fc547b4f132613afb12d2aeac654030de44cd68";
-    const an = "a4d4b04513e8f7153e6fd64f15192d32";
+    lucid.selectWallet.fromAddress(address, []);
+    
+    const pid = "ea61370d11e2162541656a85e4d98e57c4c36d470917332532a09937";
+    const an = "000de140032d122da9ae5452790308bed94cfe487513e0f3d18f50443f098985";
 
     const assetUnit = toUnit(pid,an);
     //access the utxo to make sure it exits... it does
@@ -68,15 +68,19 @@ export default async function handler(
     console.log("UTxO:", utxo);
 
     //Error: No variant matched
-    const metadata = await lucid.metadataOf<MetadataStructure>(assetUnit);
+    const metadata = await lucid.metadataOf<metad>(assetUnit);
     console.log("metadata: ", metadata);
-    const policyId = Object.keys(metadata[0]["721"])[0];
-    const assetName = Object.keys(metadata[0]["721"][policyId])[0];
-    const { description, image, name } = metadata[0]["721"][policyId][assetName];
+    console.log(metadata.coordinates);
+    console.log(metadata.name);
+    console.log(metadata.number);
+    console.log(metadata.species);
+    // const policyId = Object.keys(metadata[0]["721"])[0];
+    // const assetName = Object.keys(metadata[0]["721"][policyId])[0];
+    // const { description, image, name } = metadata[0]["721"][policyId][assetName];
 
-    console.log("Metadata Name:", name);
-    console.log("Metadata Image:", image);
-    console.log("Metadata Description:", description);
+    // console.log("Metadata Name:", name);
+    // console.log("Metadata Image:", image);
+    // console.log("Metadata Description:", description);
 
 
     res.status(200).json({
@@ -89,6 +93,13 @@ export default async function handler(
   }
 }
 
+
+type metad = {
+  coordinates: string,
+  name: string,
+  number: string,
+  species: string
+}
 
 
 

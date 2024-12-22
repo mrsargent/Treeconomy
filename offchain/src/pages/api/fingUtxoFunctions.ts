@@ -1,5 +1,5 @@
-import { Address, Data, LucidEvolution, UTxO } from "@lucid-evolution/lucid";
-import { RewardsDatum } from "./schemas";
+import { Address, Data, fromText, LucidEvolution, UTxO } from "@lucid-evolution/lucid";
+import { CIP68Datum, RewardsDatum } from "./schemas";
 import { parseAssetId } from "./apitypes";
 
 
@@ -60,3 +60,35 @@ export const getUtxoByTreeNo = async (lucid: LucidEvolution, addr: Address, tree
   return allUserContractUtxos; 
 
 }
+
+
+export const getReferenceNFTUtxo = async (lucid: LucidEvolution, userTokenAssetName: string, addr: Address, treeNumber: number): Promise<UTxO | undefined> => {
+  const allContractUtxos = await lucid.utxosAt(addr);
+  const allUserContractUtxos = allContractUtxos.find((value) => {
+    try {
+      if (value.datum){
+        const datum = Data.from(value.datum!, CIP68Datum);       
+        console.log("reference tokena name from datum: ", datum.metadata.get(fromText("name")));
+        console.log("referene token name from input: ", userTokenAssetName);
+        if (datum.metadata.get(fromText("name")) === userTokenAssetName ){
+          console.log("reference token" + userTokenAssetName + " has been found!");
+          return true;
+        }
+      } else {
+        console.log("no reference token has been found!");
+        return false;
+      }
+     
+    }
+    catch (_) {
+      console.log("catch hit on query");
+      return false;
+    }
+
+  });
+
+  return allUserContractUtxos; 
+
+
+}
+

@@ -1,13 +1,13 @@
-use aiken/builtin
 use aiken/crypto.{VerificationKeyHash}
-use aiken/primitive/bytearray
 use cardano/addresses
 use cardano/assets.{ada_asset_name, ada_policy_id, from_asset}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
+use cardano/value
 use initialmint
 use types.{Burn, Mint, MintRedeemer}
+use types/cip68
 
 //********************************************************************************
 //******************** initial mint NFT minting policy unit tests ****************
@@ -35,11 +35,17 @@ test initialmint_nft_mint_test() {
   let pid = #"a46d84ed60f637be2434536515a48a77ce83b6dc9c29c7a37788a93a"
 
   let hashed_asset_name =
-    out_ref
-      |> builtin.serialise_data
-      |> builtin.sha2_256
-      |> bytearray.take(16)
+    value.unique_token_name(
+      #"a22f96558a34449692beffa2b74eeb93b2ce1f1d65bd878501d6c8ea3e428506",
+      0,
+      cip68.prefix_222,
+      #"1234",
+    )
 
+  // out_ref
+  //   |> builtin.serialise_data
+  //   |> builtin.sha2_256
+  //   |> bytearray.take(16)
   let mint_val =
     from_asset(ada_policy_id, ada_asset_name, 100000)
       |> assets.add(pid, hashed_asset_name, 1)
@@ -58,7 +64,13 @@ test initialmint_nft_mint_test() {
             extra_signatories: [signature],
           }
         }
-  let redeemer: MintRedeemer = MintRedeemer { out_ref, action: Mint }
+  let redeemer: MintRedeemer =
+    MintRedeemer {
+      out_ref,
+      action: Mint,
+      prefix: cip68.prefix_222,
+      treeNumber: #"1234",
+    }
 
   initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
 }
@@ -85,11 +97,17 @@ test initialmint_nft_burn_test() {
   let pid = #"a46d84ed60f637be2434536515a48a77ce83b6dc9c29c7a37788a93a"
 
   let hashed_asset_name =
-    out_ref
-      |> builtin.serialise_data
-      |> builtin.sha2_256
-      |> bytearray.take(16)
+    value.unique_token_name(
+      #"a22f96558a34449692beffa2b74eeb93b2ce1f1d65bd878501d6c8ea3e428506",
+      0,
+      cip68.prefix_222,
+      #"1234",
+    )
 
+  // out_ref
+  //   |> builtin.serialise_data
+  //   |> builtin.sha2_256
+  //   |> bytearray.take(16)
   let mint_val =
     from_asset(ada_policy_id, ada_asset_name, 100000)
       |> assets.add(pid, hashed_asset_name, 1)
@@ -108,7 +126,13 @@ test initialmint_nft_burn_test() {
             extra_signatories: [signature],
           }
         }
-  let redeemer: MintRedeemer = MintRedeemer { out_ref, action: Burn }
+  let redeemer: MintRedeemer =
+    MintRedeemer {
+      out_ref,
+      action: Burn,
+      prefix: cip68.prefix_222,
+      treeNumber: #"1234",
+    }
 
   initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
 }

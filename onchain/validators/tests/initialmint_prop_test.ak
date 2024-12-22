@@ -10,10 +10,12 @@ use cardano/assets.{
 use cardano/transaction.{
   InlineDatum, Input, NoDatum, Output, OutputReference, Transaction,
 }
+use cardano/value
 use initialmint
 use tests/fake_tx
 use tests/utils_test
 use types.{Burn, Mint, MintRedeemer}
+use types/cip68
 
 //********************************************************************************
 //******************** initial mint NFT minting polciy prop tests ****************
@@ -21,12 +23,20 @@ use types.{Burn, Mint, MintRedeemer}
 
 test initialmint_nft_test(param via generate_initial_mint_nft()) {
   let InitialNFTMintTest { addr, out_ref, inputs, pid } = param
-  let hashed_asset_name =
-    out_ref
-      |> builtin.serialise_data
-      |> builtin.sha2_256
-      |> bytearray.take(16)
 
+  let hashed_asset_name =
+    value.unique_token_name(
+      out_ref.transaction_id,
+      out_ref.output_index,
+      cip68.prefix_222,
+      #"1234",
+    )
+
+  // let hashed_asset_name =
+  //   out_ref
+  //     |> builtin.serialise_data
+  //     |> builtin.sha2_256
+  //     |> bytearray.take(16)
   let mint_val =
     from_asset(ada_policy_id, ada_asset_name, 100000)
       |> assets.add(pid, hashed_asset_name, 1)
@@ -46,7 +56,13 @@ test initialmint_nft_test(param via generate_initial_mint_nft()) {
           }
         }
 
-  let redeemer: MintRedeemer = MintRedeemer { out_ref, action: Mint }
+  let redeemer: MintRedeemer =
+    MintRedeemer {
+      out_ref,
+      action: Mint,
+      prefix: cip68.prefix_222,
+      treeNumber: #"1234",
+    }
 
   initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
 }
@@ -82,7 +98,13 @@ test initialburn_nft_test(param via generate_initial_mint_nft()) {
           }
         }
 
-  let redeemer: MintRedeemer = MintRedeemer { out_ref, action: Burn }
+  let redeemer: MintRedeemer =
+    MintRedeemer {
+      out_ref,
+      action: Burn,
+      prefix: cip68.prefix_222,
+      treeNumber: #"1234",
+    }
 
   initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
 }

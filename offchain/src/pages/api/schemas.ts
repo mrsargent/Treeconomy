@@ -61,19 +61,19 @@ export function fromAddress(address: Address): AddressObject {
     paymentCredential:
       paymentCredential?.type === "Key"
         ? {
-            PublicKeyCredential: [paymentCredential.hash],
-          }
+          PublicKeyCredential: [paymentCredential.hash],
+        }
         : { ScriptCredential: [paymentCredential.hash] },
     stakeCredential: stakeCredential
       ? {
-          Inline: [
-            stakeCredential.type === "Key"
-              ? {
-                  PublicKeyCredential: [stakeCredential.hash],
-                }
-              : { ScriptCredential: [stakeCredential.hash] },
-          ],
-        }
+        Inline: [
+          stakeCredential.type === "Key"
+            ? {
+              PublicKeyCredential: [stakeCredential.hash],
+            }
+            : { ScriptCredential: [stakeCredential.hash] },
+        ],
+      }
       : null,
   };
 }
@@ -124,9 +124,9 @@ export const VestingRedeemer =
   VestingRedeemerSchema as unknown as VestingRedeemer;
 
 const OutputReferenceSchema = Data.Object({
-    transaction_id: Data.Bytes(),
-    output_index: Data.Integer()
-  });  
+  transaction_id: Data.Bytes(),
+  output_index: Data.Integer()
+});
 
 const MintActionSchema = Data.Enum([
   Data.Literal("Mint"),
@@ -135,7 +135,9 @@ const MintActionSchema = Data.Enum([
 
 export const MintRedeemerSchema = Data.Object({
   out_ref: OutputReferenceSchema,
-  action: MintActionSchema
+  action: MintActionSchema,
+  prefix: Data.Bytes(),
+  treeNumber: Data.Bytes()
 });
 
 export type MintRedeemer = Data.Static<typeof MintRedeemerSchema>;
@@ -143,3 +145,11 @@ export const MintRedeemer = MintRedeemerSchema as unknown as MintRedeemer;
 
 export type OutputReference = Data.Static<typeof OutputReferenceSchema>;
 export const OutputReference = OutputReferenceSchema as unknown as OutputReference;
+
+
+const CIP68DatumSchema = Data.Object({
+  metadata: Data.Map(Data.Any(), Data.Any()),
+  version: Data.Integer(),
+});
+export type CIP68DatumSchemaType = Data.Static<typeof CIP68DatumSchema>;
+export const CIP68Datum = CIP68DatumSchema as unknown as CIP68DatumSchemaType;

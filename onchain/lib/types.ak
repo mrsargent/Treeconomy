@@ -59,4 +59,6 @@ pub type Action {
 pub type MintRedeemer {
   out_ref: OutputReference,
   action: Action,
+  prefix: ByteArray,
+  treeNumber: ByteArray,
 }
