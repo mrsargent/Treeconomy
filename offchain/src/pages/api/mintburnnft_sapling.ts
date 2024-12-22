@@ -127,7 +127,7 @@ export default async function handler(
       const updateTree = await prisma.user.update({
         where: { treeNumber: parseInt(treeData.number) },
         data: {
-          treeNftName: userToken
+          saplingNftName: userToken
         }
       });
 
