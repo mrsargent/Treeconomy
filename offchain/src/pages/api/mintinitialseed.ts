@@ -1,14 +1,13 @@
-import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
+import { fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, MintingPolicy, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 import { AssetClass, InitialMintConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
-import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
-import { CIP68Datum, fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./schemas";
+import { CIP68Datum, fromAddress, MintRedeemer, RewardsDatum } from "./schemas";
 import { POSIXTime } from "@/Utils/types";
-import { assetNameLabels, ONE_HOUR_MS, ONE_MIN_MS, TreeToken } from "@/Utils/constants";
+import { assetNameLabels, ONE_HOUR_MS, TreeToken } from "@/Utils/constants";
 import prisma from "../../../prisma/client";
-import { generateUniqueAssetName, uniqueTokenName } from "@/Utils/Utils";
+import { generateUniqueAssetName } from "@/Utils/Utils";
 
 
 
@@ -45,17 +44,14 @@ export default async function handler(
 
     // *****************************************************************/
     //*********  constructing NFT minting policy with params ***************/
-    //**************************************************************** */
-    const pkh = getAddressDetails(address).paymentCredential?.hash;
-    const pkh1 = paymentCredentialOf(address).hash;
-
-    console.log("pkh: ", pkh);
+    //**************************************************************** */   
+    const pkh1 = paymentCredentialOf(address).hash;   
     console.log("pkh1: ", pkh1);
     const compiledNft = scripts.validators.find(
       (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
 
-    const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);
+    const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1, 0n]);
 
     const mintingNFTpolicy: MintingPolicy = {
       type: "PlutusV3",
@@ -93,17 +89,11 @@ export default async function handler(
       const myData = {
         transaction_id: goodUtxo.txHash,
         output_index: BigInt(goodUtxo.outputIndex)
-      }   
-     
-      // const hexA = a.toString(16); // Convert number 'a' to hex string
-      // const hexPersonal = hexA + '5F';
+      }        
+   
       const userToken = generateUniqueAssetName(goodUtxo, assetNameLabels.prefix222);  
       const refToken = generateUniqueAssetName(goodUtxo, assetNameLabels.prefix100);      
-      //onst formattedName = toHex(f);
-
-      //nftName = Data.to(myData, OutputReference);
-      //hashedData = toHex(sha256(fromHex(nftName)));
-      //const formattedName = hashedData.slice(0, 32);
+     
       console.log("user token: ", userToken);
       console.log("ref token: ", refToken);
       // *****************************************************************/

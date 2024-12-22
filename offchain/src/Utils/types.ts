@@ -44,3 +44,12 @@ export type ReadableUTxO<T> = {
   datum: T;
   assets: Assets;
 };
+
+export type TreeData = {
+  coordinates: string,
+  name: string,
+  number: string,
+  species: string,
+  image: string,
+}
+

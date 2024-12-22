@@ -72,7 +72,7 @@ test initialmint_nft_mint_test() {
       treeNumber: #"1234",
     }
 
-  initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
+  initialmint.init_mint_nft.mint(signature, 0, redeemer, pid, test_trans)
 }
 
 test initialmint_nft_burn_test() {
@@ -134,7 +134,7 @@ test initialmint_nft_burn_test() {
       treeNumber: #"1234",
     }
 
-  initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
+  initialmint.init_mint_nft.mint(signature, 0, redeemer, pid, test_trans)
 }
 // // //wrong signature for the transaction
 // test initialmint_nft_test_wrong_sig() fail {

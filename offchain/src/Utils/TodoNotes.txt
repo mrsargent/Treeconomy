@@ -7,3 +7,4 @@ Todo list
 --- done 5. create database with tree number, species, name of seed, sapling, tree NFT
 6. find way to read tree number from database and use in var throughout the program... 
         same wiht assetname of seed and sapling for burning purposes.  
+7. display nft name and value on ui

@@ -64,7 +64,7 @@ test initialmint_nft_test(param via generate_initial_mint_nft()) {
       treeNumber: #"1234",
     }
 
-  initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
+  initialmint.init_mint_nft.mint(signature, 0, redeemer, pid, test_trans)
 }
 
 //********************************************************************************
@@ -106,7 +106,7 @@ test initialburn_nft_test(param via generate_initial_mint_nft()) {
       treeNumber: #"1234",
     }
 
-  initialmint.init_mint_nft.mint(signature, redeemer, pid, test_trans)
+  initialmint.init_mint_nft.mint(signature, 0, redeemer, pid, test_trans)
 }
 
 //********************************************************************************

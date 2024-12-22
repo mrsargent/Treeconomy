@@ -1,4 +1,4 @@
-import { POSIXTime } from "@/Utils/types";
+import { POSIXTime, TreeData } from "@/Utils/types";
 import { Address, fromUnit, LucidEvolution, RewardAddress, UTxO } from "@lucid-evolution/lucid"
 
 
@@ -17,6 +17,9 @@ export type InitialMintConfig = {
   species: string;
 };
 
+export type GetTokenDataConfig = {
+  unit: string;
+}
 
 export type WithdrawConfig = {
   address: string;
@@ -26,8 +29,10 @@ export type WithdrawConfig = {
 
 export type MintBurnConfig = {
   address: string;
+  refLockPolicy: string;
   nftMintPolicyName: string;
-  burnAssetName: string;
+//  burnAssetName: string;
+  treeData: TreeData;
 }
 
 export type BurnConfig = {
@@ -59,7 +64,7 @@ export function hexToString(hex: string): string {
 
 export const aggregateTokens = (tokens: Token[]): Record<string, Token> => {
   return tokens.reduce((acc: Record<string, Token>, token) => {
-    const tokenName = token.tokenName === "" ? "ADA" : hexToString(token.tokenName);
+    const tokenName = token.tokenName === "" ? "ADA" : token.tokenName;
     const key = `${token.policyId}-${tokenName}`;
     if (!acc[key]) {
       acc[key] = { ...token, tokenName, quantity: BigInt(0) };
@@ -89,11 +94,3 @@ export const parse = (json: string) =>
       : value
   );
 
-
-
-// export function serialzeAndHash(datum:any){
-//   const serializeData = JSON.stringify(datum);
-//   const encoder = new TextEncoder();
-//   const encArr = encoder.encode(serializeData);
-//   return hash_blake2b256(encArr);
-// }

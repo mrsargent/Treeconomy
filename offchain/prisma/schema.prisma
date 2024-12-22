@@ -15,7 +15,7 @@ datasource db {
 
 model User {
   id             Int      @id @default(autoincrement())
-  treeNumber     Int
+  treeNumber     Int      @unique
   species        String
   seedNftName    String   @unique
   saplingNftName String?  @unique

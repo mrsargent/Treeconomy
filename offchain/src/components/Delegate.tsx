@@ -4,17 +4,19 @@ import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-cor
 import {
   Emulator,
   Lucid,
+  toUnit,
   UTxO
 } from "@lucid-evolution/lucid";
-import { aggregateTokens, BurnConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
+import { aggregateTokens, BurnConfig, GetTokenDataConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
 import TreeSpeciesSelector from "./TreeSpeciesSelector";
 import { User } from "@prisma/client";
 import Image from "next/image";
+import { TreeData } from "@/Utils/types";
 
 
 
-type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn" | "Test";
+type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn" | "Test" | "BurnMintTree";
 const NFT_MINT_POLICY = "initialmint.init_mint_nft.mint";
 const TOKEN_MINT_POLICY = "initialmint.init_mint_token.mint";
 const REWARDS_VALIDATOR = "rewards_validator.rewards_validator.spend";
@@ -126,10 +128,30 @@ const Delegate = async () => {
           console.log("Im in BurnMintSapling");
           const body: MintBurnConfig = {
             address: usedAddresses[0],
+            refLockPolicy: REWARDS_VALIDATOR,
             nftMintPolicyName: NFT_MINT_POLICY,
-            burnAssetName: treeDetails!.seedNftName
+         //   burnAssetName: treeDetails!.seedNftName,
+            treeData: selectedTokenMetadata!
           };
-          response = await fetch("/api/mintburnnft", {
+          response = await fetch("/api/mintburnnft_sapling", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(body),
+          });
+        }
+        if (param === "BurnMintTree") {
+          console.log("Im in BurnMintTree");
+          const body: MintBurnConfig = {
+            address: usedAddresses[0],
+            refLockPolicy: REWARDS_VALIDATOR,
+            nftMintPolicyName: NFT_MINT_POLICY,
+         //   burnAssetName: treeDetails!.seedNftName,
+            treeData: selectedTokenMetadata!
+          };
+          response = await fetch("/api/mintburnnft_tree", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -187,8 +209,9 @@ const Delegate = async () => {
 
   // Define a function or object to map policy IDs to image paths
   const policyToImage: { [key: string]: string } = {
-    "6f960d381c54c0c24fc547b4f132613afb12d2aeac654030de44cd68": "/img/tree.jpg",
-    "b85531f80530d92eefec5f8e2031c6ba31e0dd4ed68a5b7028a7170b": "/img/treeconomy.jpg",
+    "952ce598b0990a7c77c3fb129359b87d24b1b6505665b600079ee9cd": "/img/seed.jpg",
+    "5fe331b2a31789888e76bffdcb2777a6e3743189069c4c3a98656806": "/img/sapling.jpg",
+    "e53c06707464ebdcfd954b4ee85281bd574b38044f1db4d03f991483": "/img/tree.jpg",
     "" : "/img/ada.jpg",
     "default": "/img/seed.jpg" // Fallback image
   };
@@ -198,18 +221,34 @@ const Delegate = async () => {
   };
 
 
-  const handleTokenClick = (tokenName: string) => {
+  const handleTokenClick = async (tokenName: string, policyid: string) => {
     setSelectedToken(tokenName);
-    console.log(tokenName); // For demonstration, you can log or handle as needed
-    // Here you can implement what you want to do with the token name, like:
-    // - Show a modal with more details
-    // - Navigate to another page
-    // - Call an API to fetch more information about the token
+    console.log("policy id: ", policyid);
+    console.log("token name: ", tokenName);
+    const unit = toUnit(policyid,tokenName); 
+    
+    const body: GetTokenDataConfig = { unit: unit};
+
+    const response = await fetch("/api/getmetadata", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (response) {
+      console.log("got metadata");
+      const { TreeData } = await response.json();
+      setSelectedTokenMetadata(TreeData);
+      console.log("Metadata number: ",TreeData.number);     
+    }   
   };
 
    // New state to keep track of the selected token
    const [selectedToken, setSelectedToken] = useState<string | null>(null);
 
+   const [selectedTokenMetadata, setSelectedTokenMetadata] = useState<TreeData | null>(null);
 
   return (
     <>
@@ -240,6 +279,9 @@ const Delegate = async () => {
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("BurnMintSapling")}>
               Seed - Sapling
             </button>
+            <button className="btn btn-primary mb-4" onClick={() => handleAPI("BurnMintTree")}>
+              Sapling - Tree
+            </button>
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("Burn")}>
               Burn Baby Burn
             </button>
@@ -255,7 +297,7 @@ const Delegate = async () => {
                <div 
                key={index} 
                className={`mb-4 flex items-center cursor-pointer ${selectedToken === token.tokenName ? 'bg-blue-200' : ''}`} 
-               onClick={() => handleTokenClick(token.tokenName)}
+               onClick={() => handleTokenClick(token.tokenName, token.policyId)}
              >
                 <Image
                   src={getImageForPolicyId(token.policyId)}
