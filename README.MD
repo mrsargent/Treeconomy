@@ -24,8 +24,8 @@ Forest restoration logistics are inefficient, do not scale well, and do not have
     • Some individual projects do track tree growth, but each project follows its own method, and the type and quality of data vary greatly. Much of this data is not independently verified, and only spans the first few years of the project (before the trees fully mature). This project would fix that?
 
 ## Offchain 
-    wrtiten in typescript using lucid evolution
+    Written in typescript using lucid evolution
 
 ## onchain 
-    written in Aiken 
+    Written in Aiken 
 
