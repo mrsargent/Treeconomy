@@ -1,10 +1,10 @@
 import { fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, MintingPolicy, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, InitialMintConfig } from "./apitypes";
+import { InitialMintConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
 import scripts from '../../../../onchain/plutus.json';
 import { CIP68Datum, fromAddress, MintRedeemer, RewardsDatum } from "./schemas";
-import { POSIXTime } from "@/Utils/types";
+import { AssetClass, POSIXTime } from "@/Utils/types";
 import { assetNameLabels, ONE_HOUR_MS, TreeToken } from "@/Utils/constants";
 import prisma from "../../../prisma/client";
 import { generateUniqueAssetName } from "@/Utils/Utils";
@@ -164,8 +164,7 @@ export default async function handler(
       console.log("current time: ", currentTime);
 
       const rewardsDatum = Data.to(
-        {
-          beneficiary: fromAddress(address),
+        {         
           vestingAsset: vestingAsset,
           totalVestingQty: 10_000n,
           vestingPeriodStart: BigInt(currentTime),
@@ -178,7 +177,7 @@ export default async function handler(
 
       //create data for reference token
       const metadataMap = new Map();
-      metadataMap.set(fromText("name"), Data.to(fromText(refToken)));
+      metadataMap.set(fromText("name"), Data.to(fromText("Seed NFT " + newTree.treeNumber.toString())));
       metadataMap.set(fromText("number"), Data.to(fromText(newTree.treeNumber.toString())));
       metadataMap.set(fromText("species"), Data.to(fromText(species)));
       metadataMap.set(fromText("coordinates"), Data.to(fromText("0 deg N 9 deg W")));
@@ -231,7 +230,7 @@ export default async function handler(
         .attachMetadata(721, {
           [mintingNFTPolicyId]: {
             [userToken]: {
-              name: "Seed NFT " + newTree.treeNumber,
+              name: "blah blah blah",//"Seed NFT " + newTree.treeNumber,
               image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
               description: "No: " + newTree.treeNumber + " Tree species: " + newTree.species
             }

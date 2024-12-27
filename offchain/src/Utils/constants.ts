@@ -13,3 +13,9 @@ export const assetNameLabels = {
     prefix222: "000de140",
   }
   
+export const TREE_NFT_POLICY_ID = "1a57bc95171e9a2d9062d778e7b51547bdb15d375ab6f9da66cf442e";
+
+export const NFT_MINT_POLICY = "initialmint.init_mint_nft.mint";
+export const TOKEN_MINT_POLICY = "initialmint.init_mint_token.mint";
+export const REWARDS_VALIDATOR = "rewards_validator.rewards_validator.spend";
+

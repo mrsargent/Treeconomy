@@ -27,7 +27,6 @@ pub type VestingDatum {
 }
 
 pub type Rewards_Datum {
-  beneficiary: Address,
   vestingAsset: AssetClass,
   totalVestingQty: Int,
   vestingPeriodStart: Int,

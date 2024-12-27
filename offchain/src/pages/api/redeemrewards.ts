@@ -4,7 +4,7 @@ import { WithdrawConfig } from "./apitypes";
 import scripts from '../../../../onchain/plutus.json';
 import { RewardsDatum, VestingRedeemer } from "./schemas";
 import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
-import { TIME_TOLERANCE_MS } from "@/Utils/constants";
+import { TIME_TOLERANCE_MS, TREE_NFT_POLICY_ID } from "@/Utils/constants";
 import { POSIXTime } from "@/Utils/types";
 import { getUtxoByTreeNo } from "./fingUtxoFunctions";
 
@@ -35,7 +35,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, rewardsValidatorName, treeNumber }: WithdrawConfig = req.body;
+    const { address, rewardsValidatorName, treeNumber, assetClass }: WithdrawConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -69,16 +69,13 @@ export default async function handler(
     //*********  construct stuff ***************/
     //**************************************************************** */
 
-    //****** test out ref for first test to make sure things work */
-    // const out_ref: OutRef = {
-    //   txHash: "4054cabbd2604c32e2eb64b67ecbf9ed89d3bd55c8465da5b42c1db28f253ad7",
-    //   outputIndex: 1
-    // };
-
-    //*********************** */
-    //const vestingUTXO: UTxO = (await lucid.utxosByOutRef([out_ref]))[0];
-    const vestingUTXO: UTxO | undefined = await getUtxoByTreeNo(lucid,contractAddr,treeNumber);
+    const vestingUTXO: UTxO | undefined = await getUtxoByTreeNo(lucid,contractAddr,parseInt(treeNumber));
     console.log("Tree utxo hash: ", vestingUTXO?.txHash, " index: ",vestingUTXO?.outputIndex);
+
+    if (assetClass.policyId !== TREE_NFT_POLICY_ID) {
+      console.log("TREE NFT not selected");
+      return { type: "error", error: new Error("No Tree NFT selected") };
+    }
 
     if (!vestingUTXO){
       console.log("no utxo in script");
@@ -135,8 +132,9 @@ export default async function handler(
     console.log("vestingTokenAmount", vestingTokenAmount);
     console.log("vestingUTXO.assets[vestingTokenUnit]: ",vestingUTXO.assets[vestingTokenUnit]);
 
-    const beneficiaryAddress = toAddress(datum.value.beneficiary, "Preprod");
-    console.log("Beneficiary Address: ", beneficiaryAddress);
+    // const beneficiaryAddress = toAddress(datum.value.beneficiary, "Preprod");
+    // console.log("Beneficiary Address: ", beneficiaryAddress);
+
     const rewardsRedeemer =
       vestingTimeRemaining < 0n
         ? Data.to("FullUnlock", VestingRedeemer)
@@ -158,14 +156,14 @@ export default async function handler(
           .newTx()
           .collectFrom([vestingUTXO], rewardsRedeemer)
           .attach.SpendingValidator(rewardsValidator)
-          .pay.ToAddress(beneficiaryAddress,
+          .pay.ToAddress(address,
             
             {
               [vestingTokenUnit]: vestingTokenAmount,
             })
           .validFrom(lowerBound)
           .validTo(upperBound)
-          .addSigner(beneficiaryAddress)
+          .addSigner(address)
           .complete({ localUPLCEval: false });
 
         res.status(200).json({ tx: tx.toCBOR() });
@@ -175,7 +173,7 @@ export default async function handler(
           .newTx()        
           .collectFrom([vestingUTXO], rewardsRedeemer)
           .attach.SpendingValidator(rewardsValidator)
-          .pay.ToAddress(beneficiaryAddress, {
+          .pay.ToAddress(address, {
             [vestingTokenUnit]: vestingTokenAmount,
           })
           .pay.ToContract(
@@ -185,7 +183,7 @@ export default async function handler(
           )          
           .validFrom(lowerBound)
           .validTo(upperBound)
-          .addSigner(beneficiaryAddress)
+        //  .addSigner(address)
           .complete({ localUPLCEval: false });
         res.status(200).json({ tx: tx.toCBOR() });
       }

@@ -1,6 +1,7 @@
 import { Address, Assets, OutRef } from "@lucid-evolution/lucid";
 
 
+export type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn" | "Test" | "BurnMintTree";
 export type CborHex = string;
 export type RawHex = string;
 export type POSIXTime = number;

@@ -31,9 +31,6 @@ export default async function handler(
     const lucid = await initLucid();
     const { unit }: GetTokenDataConfig = req.body;
 
-    const utxo = await lucid.utxoByUnit(unit);
-    console.log("UTxO:", utxo);
-
     const metadata = await lucid.metadataOf<TreeData>(unit);
     console.log("metadata: ", metadata);
 

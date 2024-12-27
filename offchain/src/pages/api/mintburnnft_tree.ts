@@ -112,7 +112,7 @@ export default async function handler(
 
       //create data for reference token
       const metadataMap = new Map();
-      metadataMap.set(fromText("name"), Data.to(fromText(treeData.name)));
+      metadataMap.set(fromText("name"), Data.to(fromText("Tree NFT " + treeData.number)));
       metadataMap.set(fromText("number"), Data.to(fromText(treeData.number)));
       metadataMap.set(fromText("species"), Data.to(fromText(treeData.species)));
       metadataMap.set(fromText("coordinates"), Data.to(fromText(treeData.coordinates)));

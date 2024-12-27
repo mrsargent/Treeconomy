@@ -100,8 +100,7 @@ const AssetClassSchema = Data.Object({
   tokenName: Data.Bytes()
 });
 
-const RewardsSchema = Data.Object({
-  beneficiary: AddressSchema,
+const RewardsSchema = Data.Object({ 
   vestingAsset: AssetClassSchema,
   totalVestingQty: Data.Integer(),
   vestingPeriodStart: Data.Integer(),

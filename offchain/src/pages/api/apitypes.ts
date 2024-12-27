@@ -1,12 +1,9 @@
-import { POSIXTime, TreeData } from "@/Utils/types";
+import { AssetClass, POSIXTime, TreeData } from "@/Utils/types";
 import { Address, fromUnit, LucidEvolution, RewardAddress, UTxO } from "@lucid-evolution/lucid"
 
 
 
-export type AssetClass = {
-  policyId: string;
-  tokenName: string;
-}
+
 
 export type InitialMintConfig = {
   address: string;
@@ -24,7 +21,8 @@ export type GetTokenDataConfig = {
 export type WithdrawConfig = {
   address: string;
   rewardsValidatorName: string;
-  treeNumber: number;
+  treeNumber: string;
+  assetClass: AssetClass
 };
 
 export type MintBurnConfig = {

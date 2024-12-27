@@ -1,11 +1,9 @@
-use aiken/cbor
 use aiken/collection/list
-use cardano/address.{VerificationKey}
 use cardano/assets.{quantity_of}
 use cardano/transaction.{Output, OutputReference, Transaction}
 use types.{FullUnlock, PartialUnlock, Rewards_Datum, VestingRedeemer}
 use utils.{
-  divide_ceil_int, find_own_input, must_be_signed_by, must_start_after,
+  divide_ceil_int, find_own_input, must_start_after,
   time_remaining_before_dealine,
 }
 use validation/count.{inputs_by_vkh}
@@ -35,7 +33,6 @@ fn validate_partial_unlock(
 ) -> Bool {
   let Transaction { inputs, outputs, validity_range, .. } = self
   expect Some(Rewards_Datum {
-    beneficiary,
     vestingAsset,
     totalVestingQty,
     vestingPeriodStart,
@@ -82,9 +79,6 @@ fn validate_partial_unlock(
 
   let expcted_qty_remaining =
     divide_ceil_int(future_installments * totalVestingQty, totalInstallments)
-  //asert there is a vkh and the signature of the transaction and the beneficiary match
-  expect VerificationKey(vkh) = beneficiary.payment_credential
-  let correct_signature = must_be_signed_by(self, vkh)
 
   //unlock not permitted until firstUnlockPossible 
   let first_unlock_possible =
@@ -107,7 +101,6 @@ fn validate_partial_unlock(
   let only_one_script_input = inputs_by_vkh(inputs, 1)
 
   and {
-    correct_signature?,
     first_unlock_possible?,
     assets_remain?,
     remaining_assets_less?,
@@ -122,20 +115,11 @@ fn validate_full_unlock(
   _own_ref: OutputReference,
   self: Transaction,
 ) -> Bool {
-  expect Some(Rewards_Datum { beneficiary, vestingPeriodEnd, .. }) = datum
-
-  //asert there is a vkh and the signature of the transaction and the beneficiary match
-  expect VerificationKey(vkh) = beneficiary.payment_credential
-  let correct_signature = must_be_signed_by(self, vkh)
+  expect Some(Rewards_Datum { vestingPeriodEnd, .. }) = datum
 
   //full unlock not permitted until vesting period end time 
   let full_unlock_possible =
     must_start_after(self.validity_range, vestingPeriodEnd)
-  trace cbor.diagnostic(self.validity_range)
-  trace cbor.diagnostic(vestingPeriodEnd)
 
-  and {
-    correct_signature?,
-    full_unlock_possible?,
-  }
+  full_unlock_possible?
 }

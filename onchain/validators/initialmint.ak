@@ -1,4 +1,3 @@
-use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}

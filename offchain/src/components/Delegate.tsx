@@ -10,19 +10,10 @@ import {
 import { aggregateTokens, BurnConfig, GetTokenDataConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
 import TreeSpeciesSelector from "./TreeSpeciesSelector";
-import { User } from "@prisma/client";
 import Image from "next/image";
-import { TreeData } from "@/Utils/types";
+import { AssetClass, TransactionType, TreeData } from "@/Utils/types";
+import { NFT_MINT_POLICY, REWARDS_VALIDATOR, TOKEN_MINT_POLICY } from "@/Utils/constants";
 
-
-
-type TransactionType = "Mint" | "Withdraw" | "BurnMintSapling" | "Burn" | "Test" | "BurnMintTree";
-const NFT_MINT_POLICY = "initialmint.init_mint_nft.mint";
-const TOKEN_MINT_POLICY = "initialmint.init_mint_token.mint";
-const REWARDS_VALIDATOR = "rewards_validator.rewards_validator.spend";
-const TREE_NUM = 55;
-const TREE_SPECIES = "Oak";
-const TREE_DESCRIPTION = "No: " + TREE_NUM + " Species: " + TREE_SPECIES;
 
 const Delegate = async () => {
 
@@ -34,12 +25,17 @@ const Delegate = async () => {
     limitNetwork: network,
   });
 
+  //useState hooks 
+  const [selectedTokenMetadata, setSelectedTokenMetadata] = useState<TreeData | null>(null);
   const [treeSpecies, setTreeSpecies] = useState('oak');
+  const [selectedAssetClass, setSelectedAssetClass] = useState<AssetClass | undefined>();
+  const [walletTokens, setWalletTokens] = useState<Record<string, Token>>({});
 
-  const [treeDetails, setTreeDetails] = useState<User>();
-
-  const [withdrawNumber, setWithdrawNumber] = useState<number | undefined>();
-
+  useEffect(() => {
+    if (isConnected) {
+      getWalletTokens().then(aggregatedTokens => setWalletTokens(aggregatedTokens));
+    }
+  }, [isConnected]);
 
   const getWalletTokens = async (): Promise<Record<string, Token>> => {
     if (isConnected && enabledWallet) {
@@ -71,16 +67,6 @@ const Delegate = async () => {
     return {};
   };
 
-  const [walletTokens, setWalletTokens] = useState<Record<string, Token>>({});
-
-  useEffect(() => {
-    if (isConnected) {
-      getWalletTokens().then(aggregatedTokens => setWalletTokens(aggregatedTokens));
-    }
-  }, [isConnected]);
-
-
-
   const handleAPI = async (param: TransactionType) => {
     if (isConnected && enabledWallet) {
       try {
@@ -95,8 +81,7 @@ const Delegate = async () => {
             address: usedAddresses[0],
             nftMintPolicyName: NFT_MINT_POLICY,
             tokenMintPolicyName: TOKEN_MINT_POLICY,
-            rewardsValidatorName: REWARDS_VALIDATOR,
-            //  treeNumber: treeDetails!.treeNumber,
+            rewardsValidatorName: REWARDS_VALIDATOR,         
             species: treeSpecies
           };
           response = await fetch("/api/mintinitialseed", {
@@ -113,7 +98,8 @@ const Delegate = async () => {
           const body: WithdrawConfig = {
             address: usedAddresses[0],
             rewardsValidatorName: REWARDS_VALIDATOR,
-            treeNumber: withdrawNumber!
+            treeNumber: selectedTokenMetadata?.number!,
+            assetClass: selectedAssetClass!
           };
           response = await fetch("/api/redeemrewards", {
             method: "POST",
@@ -129,8 +115,7 @@ const Delegate = async () => {
           const body: MintBurnConfig = {
             address: usedAddresses[0],
             refLockPolicy: REWARDS_VALIDATOR,
-            nftMintPolicyName: NFT_MINT_POLICY,
-         //   burnAssetName: treeDetails!.seedNftName,
+            nftMintPolicyName: NFT_MINT_POLICY,         
             treeData: selectedTokenMetadata!
           };
           response = await fetch("/api/mintburnnft_sapling", {
@@ -147,8 +132,7 @@ const Delegate = async () => {
           const body: MintBurnConfig = {
             address: usedAddresses[0],
             refLockPolicy: REWARDS_VALIDATOR,
-            nftMintPolicyName: NFT_MINT_POLICY,
-         //   burnAssetName: treeDetails!.seedNftName,
+            nftMintPolicyName: NFT_MINT_POLICY,           
             treeData: selectedTokenMetadata!
           };
           response = await fetch("/api/mintburnnft_tree", {
@@ -194,9 +178,6 @@ const Delegate = async () => {
           const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
           const txh = await signedTx.submit();
           console.log(txh);
-
-          //set new details of Tree that was just created
-          setTreeDetails(newTree);
         }
 
 
@@ -209,11 +190,11 @@ const Delegate = async () => {
 
   // Define a function or object to map policy IDs to image paths
   const policyToImage: { [key: string]: string } = {
-    "952ce598b0990a7c77c3fb129359b87d24b1b6505665b600079ee9cd": "/img/seed.jpg",
-    "5fe331b2a31789888e76bffdcb2777a6e3743189069c4c3a98656806": "/img/sapling.jpg",
-    "e53c06707464ebdcfd954b4ee85281bd574b38044f1db4d03f991483": "/img/tree.jpg",
-    "" : "/img/ada.jpg",
-    "default": "/img/seed.jpg" // Fallback image
+    "eedb2226bed60e11609a6f69f0529116e2d1c810618bd1b1b208c7a7": "/img/seed.jpg",
+    "d304bacde35fa582ce8381ecd0f5ba57f7dca519bf00f56cd792866d": "/img/sapling.jpg",
+    "1a57bc95171e9a2d9062d778e7b51547bdb15d375ab6f9da66cf442e": "/img/tree.jpg",
+    "": "/img/ada.jpg",
+    "default": "/img/treeconomy.jpg" // Fallback image
   };
 
   const getImageForPolicyId = (policyId: string) => {
@@ -222,12 +203,14 @@ const Delegate = async () => {
 
 
   const handleTokenClick = async (tokenName: string, policyid: string) => {
-    setSelectedToken(tokenName);
-    console.log("policy id: ", policyid);
-    console.log("token name: ", tokenName);
-    const unit = toUnit(policyid,tokenName); 
-    
-    const body: GetTokenDataConfig = { unit: unit};
+    const assetClass: AssetClass = { policyId: policyid, tokenName: tokenName}
+    setSelectedAssetClass(assetClass);
+    console.log("policy id: ", assetClass.policyId);
+    console.log("token name: ", assetClass.tokenName);
+
+    const unit = toUnit(policyid, tokenName);
+
+    const body: GetTokenDataConfig = { unit: unit };
 
     const response = await fetch("/api/getmetadata", {
       method: "POST",
@@ -241,14 +224,22 @@ const Delegate = async () => {
       console.log("got metadata");
       const { TreeData } = await response.json();
       setSelectedTokenMetadata(TreeData);
-      console.log("Metadata number: ",TreeData.number);     
-    }   
+      console.log("Metadata number: ", TreeData.number);
+    }
   };
 
-   // New state to keep track of the selected token
-   const [selectedToken, setSelectedToken] = useState<string | null>(null);
+  const randomActionFunction = async (param: TransactionType) => {
+    // Generate a random number between 0 and 1
+    const shouldProceed = Math.random() < 0.5;
 
-   const [selectedTokenMetadata, setSelectedTokenMetadata] = useState<TreeData | null>(null);
+    if (shouldProceed) {
+      console.log(`Attempting to ${param}...`);
+      await handleAPI(param);
+    } else {
+      console.log(`${param} failed!`);     
+      alert(`${param} operation failed. Try again!`);
+    }
+  };
 
   return (
     <>
@@ -258,28 +249,20 @@ const Delegate = async () => {
           <div className="flex flex-col items-center w-1/2">
             <h2 className="text-lg font-semibold mb-4">Functions</h2>
             <div className="flex items-center mb-4">
-              <button className="btn btn-primary" onClick={() => handleAPI("Mint")}>
+              <button className="btn btn-primary" onClick={() => randomActionFunction("Mint")}>
                 Mint Seed NFT
-              </button>
-              <span className="ml-2">{treeDetails?.treeNumber || "No Tree"}</span>
+              </button>              
               <TreeSpeciesSelector onSelect={setTreeSpecies} />
             </div>
-            <div className="flex items-center mb-4">
-              <input
-                type="number"
-                value={withdrawNumber || ''}
-                onChange={(e) => setWithdrawNumber(e.target.value ? parseInt(e.target.value) : undefined)}
-                className="input input-bordered w-20 mr-2"
-                placeholder="Tree #"
-              />
+            <div className="flex items-center mb-4">            
               <button className="btn btn-primary" onClick={() => handleAPI("Withdraw")}>
                 Collect Rewards
               </button>
             </div>
-            <button className="btn btn-primary mb-4" onClick={() => handleAPI("BurnMintSapling")}>
+            <button className="btn btn-primary mb-4" onClick={() => randomActionFunction("BurnMintSapling")}>
               Seed - Sapling
             </button>
-            <button className="btn btn-primary mb-4" onClick={() => handleAPI("BurnMintTree")}>
+            <button className="btn btn-primary mb-4" onClick={() => randomActionFunction("BurnMintTree")}>
               Sapling - Tree
             </button>
             <button className="btn btn-primary mb-4" onClick={() => handleAPI("Burn")}>
@@ -294,22 +277,26 @@ const Delegate = async () => {
           <div className="w-fit">
             <h2 className="text-lg font-semibold mb-4">Tokens</h2>
             {Object.entries(walletTokens).map(([key, token], index) => (
-               <div 
-               key={index} 
-               className={`mb-4 flex items-center cursor-pointer ${selectedToken === token.tokenName ? 'bg-blue-200' : ''}`} 
-               onClick={() => handleTokenClick(token.tokenName, token.policyId)}
-             >
+              <div
+                key={index}
+                className={`mb-4 flex items-center cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
+                onClick={() => handleTokenClick(token.tokenName, token.policyId)}
+              >
                 <Image
                   src={getImageForPolicyId(token.policyId)}
                   alt={token.tokenName}
                   width={50}
                   height={50}
                   className="mr-2"
-                />
+                />                
                 <h1 className="flex-grow">
-
-
-                  <span>{token.tokenName}</span>
+                  {/* <span>{token.tokenName}</span> */}
+                  <span>
+                  {selectedAssetClass?.tokenName === token.tokenName && selectedTokenMetadata ? 
+                    selectedTokenMetadata.name : 
+                    token.tokenName}
+                   
+                </span>
                   <span>{"...."}</span>
                   <span>{token.quantity.toString()}</span>
                 </h1>

@@ -6,7 +6,6 @@ import {
     credentialToAddress,
     Data,
     Emulator,
-    fromHex,
     generateSeedPhrase,
     getAddressDetails,
     keyHashToCredential,
@@ -22,7 +21,6 @@ import {
 import { Either, ReadableUTxO, Result } from "./types.js";
 import { AddressObject } from "@/pages/api/schemas.js";
 import { bytesToHex, concatBytes, hexToBytes } from "@noble/hashes/utils";
-import { sha3_256 } from "@noble/hashes/sha3";
 
 
 export const utxosAtScript = async (
@@ -254,3 +252,5 @@ export function uniqueTokenName(
         return bytesToHex(prependIndex.slice(0, 32));
     }
 };
+
+
