@@ -11,11 +11,11 @@ const nextConfig = {
   
       return config;
     },
-    env: {
-      BLOCKFROST_KEY: process.env.BLOCKFROST_KEY,
-      API_URL: process.env.API_URL,
-      NETWORK: process.env.NETWORK,
-    },
+    // env: {
+    //   BLOCKFROST_KEY: process.env.BLOCKFROST_KEY,
+    //   API_URL: process.env.API_URL,
+    //   NETWORK: process.env.NETWORK,
+    // },
   };
   
   module.exports = nextConfig;

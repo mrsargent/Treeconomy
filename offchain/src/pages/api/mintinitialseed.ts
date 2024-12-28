@@ -35,18 +35,24 @@ export default async function handler(
       }
 
     };
-    const lucid = await initLucid();
-    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, species }: InitialMintConfig = req.body;
+
+    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, species, coordinates }: InitialMintConfig = req.body;
+    const lucidAI = await initLucid();
+    const lucidUser = await initLucid();
+    lucidUser.selectWallet.fromAddress(address, [])
+    lucidAI.selectWallet.fromPrivateKey(process.env.AI_PRIVATE_KEY!);
     console.log(address);
-    lucid.selectWallet.fromAddress(address, [])
-
-
+    
+    //lucidAI.selectWallet.fromSeed(process.env.SEED_PHRASE!);
+    
+    const aiAddr = await lucidAI.wallet().address();
+    
 
     // *****************************************************************/
     //*********  constructing NFT minting policy with params ***************/
     //**************************************************************** */   
-    const pkh1 = paymentCredentialOf(address).hash;   
-    console.log("pkh1: ", pkh1);
+    const pkh1 = paymentCredentialOf(aiAddr).hash;   
+    console.log("AI PKI:  ", pkh1);
     const compiledNft = scripts.validators.find(
       (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
@@ -81,7 +87,7 @@ export default async function handler(
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
 
-    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
+    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucidUser, address);
     console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
     let userTokenRedeemer, hashedData, nftName, refTokenRedeemer
 
@@ -107,7 +113,7 @@ export default async function handler(
         data: {
           treeNumber: userCount + 1,
           species: species,
-          seedNftName: userToken,
+          seedNftName: "107",//userToken,
           saplingNftName: null,
           treeNftName: null,
           createdAt: new Date
@@ -180,7 +186,7 @@ export default async function handler(
       metadataMap.set(fromText("name"), Data.to(fromText("Seed NFT " + newTree.treeNumber.toString())));
       metadataMap.set(fromText("number"), Data.to(fromText(newTree.treeNumber.toString())));
       metadataMap.set(fromText("species"), Data.to(fromText(species)));
-      metadataMap.set(fromText("coordinates"), Data.to(fromText("0 deg N 9 deg W")));
+      metadataMap.set(fromText("coordinates"), Data.to(fromText(coordinates)));
       metadataMap.set(fromText("image"), Data.to(fromText("https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg")));
 
 
@@ -194,7 +200,7 @@ export default async function handler(
       //** Note: Asset name is the serialized out_ref.  This will always
       //* give the NFT a unique encoded name (i.e.  policyid + token name)*/
       //**************************************************************** */
-      const tx = await lucid
+      const tx = await lucidUser
         .newTx()
         .collectFrom([goodUtxo])
         .pay.ToAddress(address, {
@@ -226,23 +232,15 @@ export default async function handler(
           [mintingNFTPolicyId + refToken]: 1n,
         }, refTokenRedeemer)
         .attach.MintingPolicy(mintingTokenpolicy)
-        .attach.MintingPolicy(mintingNFTpolicy)
-        .attachMetadata(721, {
-          [mintingNFTPolicyId]: {
-            [userToken]: {
-              name: "blah blah blah",//"Seed NFT " + newTree.treeNumber,
-              image: "https://capacitree.com/wp-content/uploads/2024/09/seed_nft.jpg",
-              description: "No: " + newTree.treeNumber + " Tree species: " + newTree.species
-            }
-          }
-        })
+        .attach.MintingPolicy(mintingNFTpolicy)        
+        .addSigner(aiAddr)
         .addSigner(address)
         .complete({ localUPLCEval: false });
 
+      
 
       res.status(200).json({
-        tx: tx.toCBOR(),
-        newTree: newTree
+        tx: tx.toCBOR()
       });
     } else {
       console.log("not good utxo found");

@@ -13,7 +13,7 @@ export const getFirstUxtoWithAda = async (lucid: LucidEvolution, addr: Address):
       for (const [assetId, quantity] of Object.entries(value.assets)) {
         const { policyId, tokenName } = parseAssetId(assetId);
         console.log("policy id: ", policyId, " token name: ", tokenName, " qty: ", quantity);
-        if (quantity > 3_000_000n) {
+        if (quantity > 5_000_000n) {
           console.log("returned true: ", tokenName, " qty: ", quantity);
           return true;
         }

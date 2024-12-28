@@ -10,8 +10,8 @@ export type InitialMintConfig = {
   nftMintPolicyName: string;
   tokenMintPolicyName: string;
   rewardsValidatorName: string;
-  //treeNumber: number;
   species: string;
+  coordinates: string;
 };
 
 export type GetTokenDataConfig = {

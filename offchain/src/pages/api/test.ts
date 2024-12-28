@@ -1,7 +1,5 @@
-import { Blockfrost, Lucid, Kupmios } from "@lucid-evolution/lucid";
+import { Blockfrost, Lucid, Kupmios, generateSeedPhrase, generatePrivateKey } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { GetTokenDataConfig } from "./apitypes";
-import { TreeData } from "@/Utils/types";
 
 
 export default async function handler(
@@ -29,28 +27,15 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { unit }: GetTokenDataConfig = req.body;
+    console.log("seed phrase: ", process.env.SEED_PHRASE!)
+    lucid.selectWallet.fromSeed(process.env.SEED_PHRASE!);
+    const userAddr = await lucid.wallet().address();
+    console.log("AI Address", userAddr);
+   
+    console.log("private key: ",generatePrivateKey());
+    
 
-    try {
-      const metadata = await lucid.metadataOf<TreeData>(unit);
-      console.log("metadata: ", metadata);
-  
-      const formattedMetadata: TreeData = {
-        coordinates: metadata.coordinates.slice(1),
-        name: metadata.name.slice(1),
-        number: metadata.number.slice(1),
-        species: metadata.species.slice(1),
-        image: metadata.image.slice(1)
-      };
-  
-      res.status(200).json({
-        TreeData: formattedMetadata
-      });
-    }
-   catch(error){
-    res.status(405).json({ error: "Metadata not found", TreeData: null });
-  
-   }
+    res.status(200).json({ });
   }
   else {
     res.status(405).json({ error: "Method not allowed" });
