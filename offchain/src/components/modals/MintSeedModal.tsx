@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import TreeSpeciesSelector from './TreeSpeciesSelector';
+import TreeSpeciesSelector from '../TreeSpeciesSelector';
 
 
 interface MintSeedModalProps {

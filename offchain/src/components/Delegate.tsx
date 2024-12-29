@@ -9,13 +9,12 @@ import {
 } from "@lucid-evolution/lucid";
 import { aggregateTokens, BurnConfig, GetTokenDataConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
-import TreeSpeciesSelector from "./TreeSpeciesSelector";
 import Image from "next/image";
 import { AssetClass, TransactionType, TreeData } from "@/Utils/types";
-import { ADA_POLICY_ID, NFT_MINT_POLICY, REWARDS_VALIDATOR, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID, TOKEN_MINT_POLICY, TREE_NFT_POLICY_ID } from "@/Utils/constants";
+import { ADA_POLICY_ID, NFT_MINT_POLICY, REWARDS_VALIDATOR, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID, TOKEN_MINT_POLICY, TREE_NFT_POLICY_ID, TREE_TOKEN_POLICY_ID } from "@/Utils/constants";
 import ErrorAlert from "./alerts/ErrorAlert";
 import SuccessAlert, { SuccessAlertProps } from "./alerts/SuccessAlert";
-import MintSeedModal from "./MintSeedModal";
+import MintSeedModal from "./modals/MintSeedModal";
 
 
 const Delegate = async () => {
@@ -30,7 +29,6 @@ const Delegate = async () => {
 
   //useState hooks 
   const [selectedTokenMetadata, setSelectedTokenMetadata] = useState<TreeData | null>(null);
-  const [treeSpecies, setTreeSpecies] = useState('oak');
   const [selectedAssetClass, setSelectedAssetClass] = useState<AssetClass | undefined>();
   const [walletTokens, setWalletTokens] = useState<Record<string, Token>>({});
   const [errorAlertVisible, setErrorAlertVisible] = useState(false);
@@ -219,11 +217,12 @@ const Delegate = async () => {
     [SAPLING_NFT_POLICY_ID]: "/img/sapling.jpg",
     [TREE_NFT_POLICY_ID]: "/img/tree.jpg",
     [ADA_POLICY_ID]: "/img/ada.jpg",
-    "default": "/img/treeconomy.jpg" // Fallback image
+    [TREE_TOKEN_POLICY_ID]: "/img/treeconomy.jpg",
+    "default": "/img/question.jpg"
   };
 
-  const getImageForPolicyId = (policyId: string) => {
-    return policyToImage[policyId] || policyToImage['default'];
+   const getImageForPolicyId = (policyId: string) => {
+    return policyToImage[policyId === "lovelace" ? ADA_POLICY_ID : policyId] || policyToImage['default'];
   };
 
 
