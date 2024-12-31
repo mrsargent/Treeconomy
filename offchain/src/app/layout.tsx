@@ -18,7 +18,7 @@ import './theme-config.css';
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-roboto',
 });
 
 
@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="lemonade">
+    <html lang="en" data-theme="winter">
       <body
         className={inter.variable}//{`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

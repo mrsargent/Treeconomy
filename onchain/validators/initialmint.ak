@@ -32,7 +32,6 @@ validator init_mint_nft(owner: VerificationKeyHash, _version: Int) {
             prefix,
             treeNumber,
           )
-        trace cbor.diagnostic(asset_name)
         let qty_asset_name_correct =
           value.prove_exact_nft(mint, policy_id, asset_name)
 

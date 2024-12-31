@@ -36,14 +36,12 @@ export default async function handler(
 
     };
 
-    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, species, coordinates }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, lockingValidatorName, species, coordinates }: InitialMintConfig = req.body;
     const lucidAI = await initLucid();
     const lucidUser = await initLucid();
     lucidUser.selectWallet.fromAddress(address, [])
     lucidAI.selectWallet.fromPrivateKey(process.env.AI_PRIVATE_KEY!);
     console.log(address);
-    
-    //lucidAI.selectWallet.fromSeed(process.env.SEED_PHRASE!);
     
     const aiAddr = await lucidAI.wallet().address();
     console.log("AI Addr", aiAddr);
@@ -81,8 +79,27 @@ export default async function handler(
 
     const mintingTokenPolicyId = mintingPolicyToId(mintingTokenpolicy);
     console.log("policy id: ", mintingTokenPolicyId);
+// *****************************************************************/
+    //*********  constructing for ref token that cannot be unlocked*/
+    //**************************************************************** */   
 
+    const compiledLockingValidators = scripts.validators.find(
+      (v) => v.title === lockingValidatorName,
+    )?.compiledCode;
 
+    const lockingValidatorNameValidator: Validator = {
+      type: "PlutusV3",
+      script: compiledLockingValidators!
+    };
+
+    let lockAddr
+    if (process.env.NODE_ENV === "development") {
+      lockAddr = validatorToAddress("Preprod", lockingValidatorNameValidator);
+    }
+    else {
+      lockAddr = validatorToAddress("Mainnet", lockingValidatorNameValidator);
+    }
+    console.log("contract address: ", lockAddr);
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
@@ -215,7 +232,7 @@ export default async function handler(
           { [mintingTokenPolicyId + fromText(TreeToken)]: 10000n }
         )
         .pay.ToAddressWithData(
-          contractAddr,
+          lockAddr,
           {
             kind: "inline",
             value: refTokenCIP68MetaData,

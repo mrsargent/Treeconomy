@@ -163,7 +163,7 @@ export default async function handler(
             })
           .validFrom(lowerBound)
           .validTo(upperBound)
-          .addSigner(address)
+     //     .addSigner(address)
           .complete({ localUPLCEval: false });
 
         res.status(200).json({ tx: tx.toCBOR() });
@@ -183,7 +183,7 @@ export default async function handler(
           )          
           .validFrom(lowerBound)
           .validTo(upperBound)
-        //  .addSigner(address)
+       //   .addSigner(address)
           .complete({ localUPLCEval: false });
         res.status(200).json({ tx: tx.toCBOR() });
       }

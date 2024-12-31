@@ -33,17 +33,24 @@ export default async function handler(
       }
 
     };
-    const lucid = await initLucid();
-    const { address, refLockPolicy, nftMintPolicyName, treeData }: MintBurnConfig = req.body;
+    const { address, refLockPolicy, nftMintPolicyName, treeData, burnAssetName }: MintBurnConfig = req.body;
+    const lucidAI = await initLucid();
+    const lucidUser = await initLucid();
+    lucidUser.selectWallet.fromAddress(address, [])
+    lucidAI.selectWallet.fromPrivateKey(process.env.AI_PRIVATE_KEY!);
     console.log(address);
-    lucid.selectWallet.fromAddress(address, [])
+    
+    const aiAddr = await lucidAI.wallet().address();
+    console.log("AI Addr", aiAddr);
 
     // *****************************************************************/
     //*********  constructing NFT minting policy with params ***************/
     //**************************************************************** */ 
-    const pkh1 = paymentCredentialOf(address).hash;
+    const pkh1 = paymentCredentialOf(aiAddr).hash;
 
     console.log("pkh1: ", pkh1);
+    
+    //policy for the mint of the Tree
     const compiledNft = scripts.validators.find(
       (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
@@ -56,7 +63,20 @@ export default async function handler(
     };
 
     const mintingNFTPolicyId = mintingPolicyToId(mintingNFTpolicy);
-    console.log("policy id: ", mintingNFTPolicyId);
+    console.log("mint policy id: ", mintingNFTPolicyId);
+
+    //policy for the burn of the sapling
+    const appliedBurn = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1, 1n]);
+
+    const burningNFTpolicy: MintingPolicy = {
+      type: "PlutusV3",
+      script: applyDoubleCborEncoding(appliedBurn)
+    };
+    const burnNFTPolicyId = mintingPolicyToId(burningNFTpolicy);
+    console.log("burn policy id: ", burnNFTPolicyId);
+    // *****************************************************************/
+    //*********  create contract that can't he unlockd ***************/
+    //**************************************************************** */ 
 
     const compiledValidators = scripts.validators.find(
       (v) => v.title === refLockPolicy,
@@ -67,21 +87,21 @@ export default async function handler(
       script: compiledValidators!
     };
 
-    let contractAddr
+    let lockAddr
     if (process.env.NODE_ENV === "development") {
-      contractAddr = validatorToAddress("Preprod", rewardsValidator);
+      lockAddr = validatorToAddress("Preprod", rewardsValidator);
     }
     else {
-      contractAddr = validatorToAddress("Mainnet", rewardsValidator);
+      lockAddr = validatorToAddress("Mainnet", rewardsValidator);
     }
-    console.log("contract address: ", contractAddr);
+    console.log("contract address: ", lockAddr);
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
 
-    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
+    const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucidUser, address);
     console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
-    let userTokenRedeemer, refTokenRedeemer
+    let userTokenRedeemer, refTokenRedeemer, burnNFTRedeemer
 
     if (goodUtxo !== undefined) {
       const myData = {
@@ -109,6 +129,12 @@ export default async function handler(
         treeNumber: fromText("")
       }, MintRedeemer);
 
+      burnNFTRedeemer = Data.to({
+        out_ref: myData,
+        action: "Burn", 
+        prefix: assetNameLabels.prefix222,
+        treeNumber: fromText("")
+      }, MintRedeemer);
 
       //create data for reference token
       const metadataMap = new Map();
@@ -134,14 +160,14 @@ export default async function handler(
       // *****************************************************************/
       //*********  constructing transaction ******************************/
       //**************************************************************** */
-      const tx = await lucid
+      const tx = await lucidUser
         .newTx()
         .collectFrom([goodUtxo])
         .pay.ToAddress(address, {
           [mintingNFTPolicyId + userToken]: 1n,
         })
         .pay.ToAddressWithData(
-          contractAddr,
+          lockAddr,
           {
             kind: "inline",
             value: refTokenCIP68MetaData,
@@ -154,21 +180,20 @@ export default async function handler(
         .mintAssets({
           [mintingNFTPolicyId + refToken]: 1n,
         }, refTokenRedeemer)
+        .mintAssets({
+          [burnNFTPolicyId + burnAssetName]: -1n,
+        }, burnNFTRedeemer)
         .attach.MintingPolicy(mintingNFTpolicy)
-        .attachMetadata(721, {
-          [mintingNFTPolicyId]: {
-            [userToken]: {
-              name: "Sapling NFT " + updateTree.treeNumber,
-              image: "https://capacitree.com/wp-content/uploads/2024/12/tree2.jpg",
-              description: "No: " + updateTree.treeNumber + " Tree species: " + updateTree.species
-            }
-          }
-        })
-        .addSigner(address)
-        .complete({ localUPLCEval: false })
+        .attach.MintingPolicy(burningNFTpolicy)        
+        .addSigner(aiAddr)
+        .complete({ localUPLCEval: false });
 
-
-      res.status(200).json({ tx: tx.toCBOR() });
+        const aiSigned = await lucidAI.fromTx(tx.toCBOR()).partialSign.withPrivateKey(process.env.AI_PRIVATE_KEY!);        
+      
+        res.status(200).json({
+          tx: tx.toCBOR(),
+          aiSigned,         
+        });
     } else {
       console.log("not good utxo found");
       res.status(401).json({ error: "Couldn't find utxo" });

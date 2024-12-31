@@ -10,6 +10,7 @@ export type InitialMintConfig = {
   nftMintPolicyName: string;
   tokenMintPolicyName: string;
   rewardsValidatorName: string;
+  lockingValidatorName: string;
   species: string;
   coordinates: string;
 };
@@ -29,8 +30,8 @@ export type MintBurnConfig = {
   address: string;
   refLockPolicy: string;
   nftMintPolicyName: string;
-//  burnAssetName: string;
   treeData: TreeData;
+  burnAssetName: string;
 }
 
 export type BurnConfig = {

@@ -16,10 +16,10 @@ export default function Footer() {
           <Link href="https://twitter.com/elementalpool">
             <Image
               className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] "
-              src="/img/treeconomy.jpg"
+              src="/img/icon.jpg"
               alt="Next.js Logo"
-              width={20}
-              height={60}
+              width={50}
+              height={100}
               priority
             />
           </Link>

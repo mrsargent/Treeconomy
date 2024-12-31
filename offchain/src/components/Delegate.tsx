@@ -11,7 +11,7 @@ import { aggregateTokens, BurnConfig, GetTokenDataConfig, InitialMintConfig, Min
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { AssetClass, TransactionType, TreeData } from "@/Utils/types";
-import { ADA_POLICY_ID, NFT_MINT_POLICY, REWARDS_VALIDATOR, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID, TOKEN_MINT_POLICY, TREE_NFT_POLICY_ID, TREE_TOKEN_POLICY_ID } from "@/Utils/constants";
+import { ADA_POLICY_ID, LOCKING_CONTRACT, NFT_MINT_POLICY, REWARDS_VALIDATOR, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID, TOKEN_MINT_POLICY, TREE_NFT_POLICY_ID, TREE_TOKEN_POLICY_ID } from "@/Utils/constants";
 import ErrorAlert from "./alerts/ErrorAlert";
 import SuccessAlert, { SuccessAlertProps } from "./alerts/SuccessAlert";
 import MintSeedModal from "./modals/MintSeedModal";
@@ -73,7 +73,7 @@ const Delegate = async () => {
     return {};
   };
 
-  const handleAPI = async (param: TransactionType, species?: string, coordinates?: string) => {
+  const handleAPI_AI = async (param: TransactionType, species?: string, coordinates?: string) => {
     if (isConnected && enabledWallet) {
       try {
         const lucid = await Lucid(new Emulator([]), "Preprod");
@@ -88,6 +88,7 @@ const Delegate = async () => {
             nftMintPolicyName: NFT_MINT_POLICY,
             tokenMintPolicyName: TOKEN_MINT_POLICY,
             rewardsValidatorName: REWARDS_VALIDATOR,
+            lockingValidatorName: LOCKING_CONTRACT,
             species: species!,
             coordinates: coordinates!
           };
@@ -121,9 +122,10 @@ const Delegate = async () => {
           console.log("Im in BurnMintSapling");
           const body: MintBurnConfig = {
             address: usedAddresses[0],
-            refLockPolicy: REWARDS_VALIDATOR,
+            refLockPolicy: LOCKING_CONTRACT,
             nftMintPolicyName: NFT_MINT_POLICY,
-            treeData: selectedTokenMetadata!
+            treeData: selectedTokenMetadata!,
+            burnAssetName: selectedAssetClass?.tokenName!
           };
           response = await fetch("/api/mintburnnft_sapling", {
             method: "POST",
@@ -138,9 +140,10 @@ const Delegate = async () => {
           console.log("Im in BurnMintTree");
           const body: MintBurnConfig = {
             address: usedAddresses[0],
-            refLockPolicy: REWARDS_VALIDATOR,
+            refLockPolicy: LOCKING_CONTRACT,
             nftMintPolicyName: NFT_MINT_POLICY,
-            treeData: selectedTokenMetadata!
+            treeData: selectedTokenMetadata!,
+            burnAssetName: selectedAssetClass?.tokenName!
           };
           response = await fetch("/api/mintburnnft_tree", {
             method: "POST",
@@ -181,10 +184,94 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
-        if (response) {        
-          const { tx, aiSigned } = await response.json();       
-          const userSign = await lucid.fromTx(tx).partialSign.withWallet();      
-          const signedTx = await lucid.fromTx(tx).assemble([aiSigned,userSign]).complete();
+        if (response) {
+          const { tx, aiSigned } = await response.json();
+          const userSign = await lucid.fromTx(tx).partialSign.withWallet();
+          const signedTx = await lucid.fromTx(tx).assemble([aiSigned, userSign]).complete();
+          const txh = await signedTx.submit();
+          console.log(txh);
+          if (txh !== "") {
+            const sp: SuccessAlertProps = {
+              message: "Transaction was a success",
+              onClose: () => false,
+              link: {
+                href: txh,
+                text: "Transaction ID"
+              }
+            }
+            setSuccessMessage(sp);
+            setSuccessAlertVisible(true);
+          }
+        }
+
+
+      } catch (error) {
+        console.log(error);
+        console.error(JSON.stringify(error, null, 2));
+        setAlertMessage(`Error in transaction: ${error}`);
+        setErrorAlertVisible(true);
+      }
+    }
+  };
+
+  const handleAPI = async (param: TransactionType, species?: string, coordinates?: string) => {
+    if (isConnected && enabledWallet) {
+      try {
+        const lucid = await Lucid(new Emulator([]), "Preprod");
+        const api = await window.cardano[enabledWallet].enable();
+        lucid.selectWallet.fromAPI(api);
+        let response;
+
+        if (param === "Withdraw") {
+          console.log("Im in withdraw");
+          const body: WithdrawConfig = {
+            address: usedAddresses[0],
+            rewardsValidatorName: REWARDS_VALIDATOR,
+            treeNumber: selectedTokenMetadata?.number!,
+            assetClass: selectedAssetClass!
+          };
+          response = await fetch("/api/redeemrewards", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(body),
+          });
+        }
+        if (param === "Burn") {
+          const body: BurnConfig = {
+            address: usedAddresses[0],
+            nftMintPolicyName: NFT_MINT_POLICY,
+            burnAssetName: selectedAssetClass?.tokenName!
+          };
+          response = await fetch("/api/burnnft", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(body),
+          });
+        }
+        if (param === "Test") {
+          const body: BurnConfig = {
+            address: usedAddresses[0],
+            nftMintPolicyName: NFT_MINT_POLICY,
+            burnAssetName: selectedAssetClass?.tokenName!
+          };
+          response = await fetch("/api/test", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(body),
+          });
+        }
+        if (response) {
+          const { tx } = await response.json();
+          const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
           const txh = await signedTx.submit();
           console.log(txh);
           if (txh !== "") {
@@ -270,9 +357,9 @@ const Delegate = async () => {
     if (shouldProceed) {
       console.log(`Attempting to ${param}...`);
       if (param === "Mint") {
-        await handleAPI(param, species, coordinates);
+        await handleAPI_AI(param, species, coordinates);
       } else {
-        await handleAPI(param);
+        await handleAPI_AI(param);
       }
     } else {
       console.log(`${param} failed!`);
@@ -281,8 +368,7 @@ const Delegate = async () => {
     }
   };
 
-  const handleMintSeed = (species: string, coordinates: string) => {
-    // Here you would handle the minting with the selected species and coordinates
+  const handleMintSeed = (species: string, coordinates: string) => {  
     console.log('Minting Seed NFT with:', { species, coordinates });
     randomActionFunction("Mint", species, coordinates);
     setIsMintModalOpen(false);
@@ -323,12 +409,12 @@ const Delegate = async () => {
             >
               Collect Rewards
             </button>
-            <button className="btn btn-primary" onClick={() => handleAPI("Burn")}>
+            {/* <button className="btn btn-primary" onClick={() => handleAPI("Burn")}>
               Burn Baby Burn
             </button>
             <button className="btn btn-primary" onClick={() => handleAPI("Test")}>
               Test
-            </button>
+            </button> */}
           </div>
 
           {/* Tokens section */}

@@ -106,6 +106,31 @@
       "hash": "8f8fa51610cf93264bca85a299a1ccceb378deca101f1989c8ba8047"
     },
     {
+      "title": "ref_token_lock.ref_token_lock_validator.spend",
+      "datum": {
+        "title": "_datum",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "redeemer": {
+        "title": "_redeemer",
+        "schema": {
+          "$ref": "#/definitions/Data"
+        }
+      },
+      "compiledCode": "5857010100323232323225333002323232323253330073370e900118041baa00113232324a06018601a004601600260126ea800458c024c028008c020004c020008c018004c010dd50008a4c26cacae6955ceaab9e5742ae89",
+      "hash": "921321b6f130feec2496ccae52b28cf77ec3409a992d00c23e6b2a2a"
+    },
+    {
+      "title": "ref_token_lock.ref_token_lock_validator.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "5857010100323232323225333002323232323253330073370e900118041baa00113232324a06018601a004601600260126ea800458c024c028008c020004c020008c018004c010dd50008a4c26cacae6955ceaab9e5742ae89",
+      "hash": "921321b6f130feec2496ccae52b28cf77ec3409a992d00c23e6b2a2a"
+    },
+    {
       "title": "rewards_validator.rewards_validator.spend",
       "datum": {
         "title": "datum",
