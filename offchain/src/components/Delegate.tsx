@@ -154,7 +154,8 @@ const Delegate = async () => {
         if (param === "Burn") {
           const body: BurnConfig = {
             address: usedAddresses[0],
-            nftMintPolicyName: NFT_MINT_POLICY
+            nftMintPolicyName: NFT_MINT_POLICY,
+            burnAssetName: selectedAssetClass?.tokenName!
           };
           response = await fetch("/api/burnnft", {
             method: "POST",
@@ -168,7 +169,8 @@ const Delegate = async () => {
         if (param === "Test") {
           const body: BurnConfig = {
             address: usedAddresses[0],
-            nftMintPolicyName: NFT_MINT_POLICY
+            nftMintPolicyName: NFT_MINT_POLICY,
+            burnAssetName: selectedAssetClass?.tokenName!
           };
           response = await fetch("/api/test", {
             method: "POST",
@@ -179,12 +181,10 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
-        if (response) {
-          console.log("finished with api");
-          const { tx } = await response.json();
-          const firstSign = await lucid.fromTx(tx).partialSign.withWallet();
-          const secondSign = await lucid.fromTx(tx).partialSign.withPrivateKey(process.env.AI_PRIVATE_KEY!);
-          const signedTx = await lucid.fromTx(tx).assemble([firstSign, secondSign]).complete();
+        if (response) {        
+          const { tx, aiSigned } = await response.json();       
+          const userSign = await lucid.fromTx(tx).partialSign.withWallet();      
+          const signedTx = await lucid.fromTx(tx).assemble([aiSigned,userSign]).complete();
           const txh = await signedTx.submit();
           console.log(txh);
           if (txh !== "") {
@@ -221,7 +221,7 @@ const Delegate = async () => {
     "default": "/img/question.jpg"
   };
 
-   const getImageForPolicyId = (policyId: string) => {
+  const getImageForPolicyId = (policyId: string) => {
     return policyToImage[policyId === "lovelace" ? ADA_POLICY_ID : policyId] || policyToImage['default'];
   };
 
@@ -232,11 +232,11 @@ const Delegate = async () => {
     console.log("policy id: ", assetClass.policyId);
     console.log("token name: ", assetClass.tokenName);
 
-    const unit = toUnit(policyid, tokenName);
-
-    const body: GetTokenDataConfig = { unit: unit };
-
     try {
+      const unit = toUnit(policyid, tokenName);
+
+      const body: GetTokenDataConfig = { unit: unit };
+
       const response = await fetch("/api/getmetadata", {
         method: "POST",
         headers: {
@@ -265,7 +265,7 @@ const Delegate = async () => {
 
   const randomActionFunction = async (param: TransactionType, species?: string, coordinates?: string) => {
     // Generate a random number between 0 and 1
-    const shouldProceed = Math.random() < 0.01;
+    const shouldProceed = Math.random() < 0.5;
 
     if (shouldProceed) {
       console.log(`Attempting to ${param}...`);
@@ -296,27 +296,39 @@ const Delegate = async () => {
           {/* Buttons section */}
           <div className="flex flex-row items-center justify-center gap-4 mb-8 flex-wrap">
             <h2 className="text-lg font-semibold mb-4 w-full text-center"></h2>
-            <button className="btn btn-primary" onClick={() => setIsMintModalOpen(true)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setIsMintModalOpen(true)}
+            >
               Mint Seed NFT
             </button>
-            <button className="btn btn-primary" onClick={() => randomActionFunction("BurnMintSapling")}>
+            <button
+              className={`btn ${selectedAssetClass?.policyId !== SEED_NFT_POLICY_ID ? 'btn-disabled' : 'btn-primary'}`}
+              onClick={() => randomActionFunction("BurnMintSapling")}
+              disabled={selectedAssetClass?.policyId !== SEED_NFT_POLICY_ID}
+            >
               Seed - Sapling
             </button>
-            <button className="btn btn-primary" onClick={() => randomActionFunction("BurnMintTree")}>
+            <button
+              className={`btn ${selectedAssetClass?.policyId !== SAPLING_NFT_POLICY_ID ? 'btn-disabled' : 'btn-primary'}`}
+              onClick={() => randomActionFunction("BurnMintTree")}
+              disabled={selectedAssetClass?.policyId !== SAPLING_NFT_POLICY_ID}
+            >
               Sapling - Tree
             </button>
-            <button className={`btn ${selectedAssetClass?.policyId !== TREE_NFT_POLICY_ID ? 'btn-disabled' : 'btn-primary'}`}
+            <button
+              className={`btn ${selectedAssetClass?.policyId !== TREE_NFT_POLICY_ID ? 'btn-disabled' : 'btn-primary'}`}
               onClick={() => handleAPI("Withdraw")}
               disabled={selectedAssetClass?.policyId !== TREE_NFT_POLICY_ID}
             >
               Collect Rewards
             </button>
-            {/* <button className="btn btn-primary" onClick={() => handleAPI("Burn")}>
-            Burn Baby Burn
-          </button>
-          <button className="btn btn-primary" onClick={() => handleAPI("Test")}>
-            Test
-          </button> */}
+            <button className="btn btn-primary" onClick={() => handleAPI("Burn")}>
+              Burn Baby Burn
+            </button>
+            <button className="btn btn-primary" onClick={() => handleAPI("Test")}>
+              Test
+            </button>
           </div>
 
           {/* Tokens section */}

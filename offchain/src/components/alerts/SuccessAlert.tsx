@@ -26,10 +26,15 @@ const Alert = ({ message, onClose, link }: SuccessAlertProps) => {
           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span>{message}</span>
-      {link && (
-        <Link href={`https://preprod.cexplorer.io/tx/${link.href}`} className="text-sm text-blue-600 hover:underline mb-2">
+      {link && (       
+        <a
+          href={`https://preprod.cexplorer.io/tx/${link.href}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-blue-600 hover:underline mb-2"
+        >
           {link.text}
-        </Link>
+        </a>
       )}
       <div>
         <button className="btn btn-sm" onClick={onClose}>ok</button>

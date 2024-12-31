@@ -1,12 +1,11 @@
-import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Validator, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Constr, validatorToAddress, Kupmios } from "@lucid-evolution/lucid";
+import { Blockfrost, fromHex, fromText, Lucid, mintingPolicyToId, paymentCredentialOf, UTxO, Data, applyParamsToScript, applyDoubleCborEncoding, getAddressDetails, MintingPolicy, toHex, Kupmios } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { AssetClass, BurnConfig, InitialMintConfig } from "./apitypes";
+import { BurnConfig } from "./apitypes";
 import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
 import { sha256 } from '@noble/hashes/sha2';
 import scripts from '../../../../onchain/plutus.json';
-import { fromAddress, MintRedeemer, OutputReference, RewardsDatum } from "./schemas";
-import { POSIXTime } from "@/Utils/types";
-import { ONE_HOUR_MS, ONE_MIN_MS, TreeToken } from "@/Utils/constants";
+import { MintRedeemer, OutputReference } from "./schemas";
+import { assetNameLabels } from "@/Utils/constants";
 
 //TODO: bring in NFT policyid to burn
 
@@ -19,12 +18,8 @@ export default async function handler(
     //*********  establish network and wallet connection ***************/
     //**************************************************************** */
     const initLucid = async () => {
-      if (process.env.NODE_ENV === "development") {
-        // const b = new Blockfrost(
-        //   process.env.API_URL_PREPROD as string,
-        //   process.env.BLOCKFROST_KEY_PREPROD as string
-        // );
-        const b =  new Kupmios(
+      if (process.env.NODE_ENV === "development") {       
+        const b = new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
         );
@@ -39,7 +34,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, nftMintPolicyName}: BurnConfig = req.body;
+    const { address, nftMintPolicyName, burnAssetName }: BurnConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -55,7 +50,7 @@ export default async function handler(
       (v) => v.title === nftMintPolicyName,
     )?.compiledCode;
 
-    const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1]);
+    const applied = applyParamsToScript(applyDoubleCborEncoding(compiledNft!), [pkh1, 0n]);
 
     const mintingNFTpolicy: MintingPolicy = {
       type: "PlutusV3",
@@ -64,14 +59,14 @@ export default async function handler(
 
     const mintingNFTPolicyId = mintingPolicyToId(mintingNFTpolicy);
     console.log("policy id: ", mintingNFTPolicyId);
-  
+
     // *****************************************************************/
     //*********  find utxo and construct redeemer ***************/
     //**************************************************************** */
 
     const goodUtxo: UTxO | undefined = await getFirstUxtoWithAda(lucid, address);
     console.log("Tx hash: ", goodUtxo?.txHash, "Index: ", goodUtxo?.outputIndex);
-    let encodedUtxo, nftRedeemer, d, nftName 
+    let encodedUtxo, nftRedeemer, d, nftName
 
     if (goodUtxo !== undefined) {
       const myData = {
@@ -81,16 +76,12 @@ export default async function handler(
 
       nftRedeemer = Data.to({
         out_ref: myData,
-        action: "Burn"
+        action: "Burn", 
+        prefix: assetNameLabels.prefix222,
+        treeNumber: fromText("")
       }, MintRedeemer);
 
-      nftName = Data.to(myData, OutputReference);
 
-      console.log("redeemer: ", nftRedeemer);
-      d = toHex(sha256(fromHex(nftName)));
-      console.log("d: ", d);
-      encodedUtxo = Data.to(d);
-      console.log("encodedutxo:", encodedUtxo);
 
     } else {
       console.log("not good utxo found");
@@ -98,20 +89,18 @@ export default async function handler(
       return;
     }
 
-    //enter burn name here
-    const enc = "65b359e3a22b20edab8c101b1b042778"
-    console.log("Enc: ", enc);
+   
 
     // *****************************************************************/
     //*********  constructing transaction ******************************/
     //**************************************************************** */
     const tx = await lucid
       .newTx()
-      .collectFrom([goodUtxo])             
+      .collectFrom([goodUtxo])
       .mintAssets({
-        [mintingNFTPolicyId + enc]: -1n,        
-      }, nftRedeemer)      
-      .attach.MintingPolicy(mintingNFTpolicy)      
+        [mintingNFTPolicyId + burnAssetName]: -1n,
+      }, nftRedeemer)
+      .attach.MintingPolicy(mintingNFTpolicy)
       .addSigner(address)
       .complete({ localUPLCEval: false })
 

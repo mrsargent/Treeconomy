@@ -36,6 +36,7 @@ export type MintBurnConfig = {
 export type BurnConfig = {
   address: string;
   nftMintPolicyName: string;
+  burnAssetName: string;
 }
 
 export type Token = {

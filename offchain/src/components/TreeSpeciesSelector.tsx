@@ -8,24 +8,27 @@ type TreeSpeciesSelectorProps = {
 const TreeSpeciesSelector: React.FC<TreeSpeciesSelectorProps> = ({ onSelect, initialSpecies = 'oak' }) => {
   const [treeSpecies, setTreeSpecies] = useState(initialSpecies);
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSpecies = e.target.value;
-    setTreeSpecies(newSpecies);
-    onSelect(newSpecies);
+  const handleSelect = (species: string) => {
+    setTreeSpecies(species);
+    onSelect(species);
   };
 
   return (
-    <select 
-      value={treeSpecies} 
-      onChange={handleChange}
-      className="ml-2 p-1 bg-white"
-    >
-      <option value="oak">Oak</option>
-      <option value="pine">Pine</option>
-      <option value="maple">Maple</option>
-      <option value="apple">Apple</option>
-      <option value="ashe">Ashe</option>
-    </select>
+    <details className="dropdown">
+      <summary tabIndex={0} className="btn m-1">{treeSpecies}</summary>
+      <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+        {['oak', 'pine', 'maple', 'apple', 'ashe'].map(species => (
+          <li key={species}>
+            <a 
+              onClick={() => handleSelect(species)}
+              className={species === treeSpecies ? 'active' : ''}
+            >              
+              {species}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 };
 

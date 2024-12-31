@@ -15,7 +15,7 @@ export const assetNameLabels = {
   
 export const TREE_NFT_POLICY_ID = "1a57bc95171e9a2d9062d778e7b51547bdb15d375ab6f9da66cf442e";
 export const SAPLING_NFT_POLICY_ID = "d304bacde35fa582ce8381ecd0f5ba57f7dca519bf00f56cd792866d";
-export const SEED_NFT_POLICY_ID = "3a4b3f0526073832b383b263ddfd8f7195c7aef346657efcc74f9675";
+export const SEED_NFT_POLICY_ID = "59969f8b76e3d245d7ace18b6a2b2bb1b24f45bdcdc9bcec852c3c13";
 export const ADA_POLICY_ID = "";
 export const TREE_TOKEN_POLICY_ID = "9d49b6a75a8ec75bbd97703795090689f689d2eec11a1ccfe76cd39f";
 

@@ -46,7 +46,7 @@ export default async function handler(
     //lucidAI.selectWallet.fromSeed(process.env.SEED_PHRASE!);
     
     const aiAddr = await lucidAI.wallet().address();
-    
+    console.log("AI Addr", aiAddr);
 
     // *****************************************************************/
     //*********  constructing NFT minting policy with params ***************/
@@ -113,7 +113,7 @@ export default async function handler(
         data: {
           treeNumber: userCount + 1,
           species: species,
-          seedNftName: "107",//userToken,
+          seedNftName: userToken,
           saplingNftName: null,
           treeNftName: null,
           createdAt: new Date
@@ -233,14 +233,15 @@ export default async function handler(
         }, refTokenRedeemer)
         .attach.MintingPolicy(mintingTokenpolicy)
         .attach.MintingPolicy(mintingNFTpolicy)        
-        .addSigner(aiAddr)
-        .addSigner(address)
+        .addSigner(aiAddr)        
         .complete({ localUPLCEval: false });
-
+       
+        const aiSigned = await lucidAI.fromTx(tx.toCBOR()).partialSign.withPrivateKey(process.env.AI_PRIVATE_KEY!);        
       
-
       res.status(200).json({
-        tx: tx.toCBOR()
+        tx: tx.toCBOR(),
+        aiSigned,
+       
       });
     } else {
       console.log("not good utxo found");
