@@ -9,7 +9,9 @@ Todo list
         same wiht assetname of seed and sapling for burning purposes.  
 -- done 7. display nft name and value on ui
 
-8. Create always false validator to load ref token to
-9. Improve UI (make more modern)
-10. implement AI bot on other two mints and not on collect
-11. add "add image" on modal for mint 
+-- done 8. Create always false validator to load ref token to
+-- done 9. Improve UI (make more modern)
+-- done 10. implement AI bot on other two mints and not on collect
+-- done 11. add "add image" on modal for mint 
+12. add error handling to rewards script
+13. improve UI token display - perhaps display bigger picture of status of each token. 

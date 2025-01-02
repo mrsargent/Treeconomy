@@ -15,6 +15,7 @@ import { ADA_POLICY_ID, LOCKING_CONTRACT, NFT_MINT_POLICY, REWARDS_VALIDATOR, SA
 import ErrorAlert from "./alerts/ErrorAlert";
 import SuccessAlert, { SuccessAlertProps } from "./alerts/SuccessAlert";
 import MintSeedModal from "./modals/MintSeedModal";
+import MintSaplingTreeModal from "./modals/MintSaplingTreeModal";
 
 
 const Delegate = async () => {
@@ -36,14 +37,53 @@ const Delegate = async () => {
   const [alertMessage, setAlertMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState<SuccessAlertProps>();
   const [isMintModalOpen, setIsMintModalOpen] = useState(false);
+  const [isSaplingModalOpen, setIsSaplingModalOpen] = useState(false);
+  const [isTreeModalOpen, setIsTreeModalOpen] = useState(false);
+  const [tokenMetadata, setTokenMetadata] = useState<Record<string, TreeData>>({});
 
   useEffect(() => {
     if (isConnected) {
-      getWalletTokens().then(aggregatedTokens => setWalletTokens(aggregatedTokens));
+      getWalletTokens();
     }
   }, [isConnected]);
 
-  const getWalletTokens = async (): Promise<Record<string, Token>> => {
+  // useEffect(() => {
+  //   if (isConnected) {
+  //     getWalletTokens().then(aggregatedTokens => setWalletTokens(aggregatedTokens));
+  //   }
+  // }, [isConnected]);
+
+  // const getWalletTokens = async (): Promise<Record<string, Token>> => {
+  //   if (isConnected && enabledWallet) {
+  //     try {
+  //       const lucid = await Lucid(new Emulator([]), "Preprod");
+  //       const api = await window.cardano[enabledWallet].enable();
+  //       lucid.selectWallet.fromAPI(api);
+
+  //       const utxos: UTxO[] = await lucid.wallet().getUtxos();
+  //       const tokens: Token[] = [];
+
+  //       for (const utxo of utxos) {
+  //         const assets = utxo.assets;
+  //         for (const [assetId, quantity] of Object.entries(assets)) {
+  //           const { policyId, tokenName } = parseAssetId(assetId);
+  //           tokens.push({
+  //             policyId,
+  //             tokenName,
+  //             quantity: BigInt(quantity)
+  //           });
+  //         }
+  //       }
+  //       return aggregateTokens(tokens);
+  //     } catch (error) {
+  //       console.error("Failed to fetch wallet tokens:", error);
+  //       return {};
+  //     }
+  //   }
+  //   return {};
+  // };
+
+  const getWalletTokens = async () => {
     if (isConnected && enabledWallet) {
       try {
         const lucid = await Lucid(new Emulator([]), "Preprod");
@@ -57,21 +97,39 @@ const Delegate = async () => {
           const assets = utxo.assets;
           for (const [assetId, quantity] of Object.entries(assets)) {
             const { policyId, tokenName } = parseAssetId(assetId);
-            tokens.push({
-              policyId,
-              tokenName,
-              quantity: BigInt(quantity)
-            });
+            tokens.push({ policyId, tokenName, quantity: BigInt(quantity) });
           }
         }
-        return aggregateTokens(tokens);
+        const aggregatedTokens = aggregateTokens(tokens);
+        setWalletTokens(aggregatedTokens);
+        await fetchMetadataForTokens(Object.values(aggregatedTokens));
       } catch (error) {
         console.error("Failed to fetch wallet tokens:", error);
-        return {};
+        setErrorAlertVisible(true);
+        setAlertMessage("Failed to fetch wallet tokens");
       }
     }
-    return {};
   };
+
+  const fetchMetadataForTokens = async (tokens: Token[]) => {
+    const metadata: { [key: string]: TreeData } = {};
+    for (const token of tokens) {
+      // Skip ADA (lovelace)
+      if (token.policyId === "lovelace") continue;
+      const unit = toUnit(token.policyId, token.tokenName);
+      const response = await fetch("/api/getmetadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ unit }),
+      });
+      if (response) {
+        const { TreeData } = await response.json();
+        metadata[unit] = TreeData;
+      }
+    }
+    setTokenMetadata(metadata);
+  };
+
 
   const handleAPI_AI = async (param: TransactionType, species?: string, coordinates?: string) => {
     if (isConnected && enabledWallet) {
@@ -368,11 +426,23 @@ const Delegate = async () => {
     }
   };
 
-  const handleMintSeed = (species: string, coordinates: string) => {  
+  const handleMintSeed = (species: string, coordinates: string, image: File | null) => {
     console.log('Minting Seed NFT with:', { species, coordinates });
     randomActionFunction("Mint", species, coordinates);
     setIsMintModalOpen(false);
   };
+
+  const handleMintSapling = (treeType: string, image: File | null) => {
+    console.log('Minting Sapling NFT');
+    randomActionFunction("BurnMintSapling");
+    setIsMintModalOpen(false);
+  }
+
+  const handleMintTree = (treeType: string, image: File | null) => {
+    console.log('Minting Tree NFT');
+    randomActionFunction("BurnMintTree");
+    setIsMintModalOpen(false);
+  }
 
 
   return (
@@ -417,48 +487,54 @@ const Delegate = async () => {
             </button> */}
           </div>
 
-          {/* Tokens section */}
-          <div className="w-full">
-            <h2 className="text-xl font-semibold mb-4 text-center">Tokens</h2>
-            <div className="flex flex-col items-start">
-              {Object.entries(walletTokens).map(([key, token], index) => (
+          <div className="w-full sm:w-1/2 p-4 border-l border-gray-300">
+            <h2 className="text-lg font-semibold mb-4 text-center">My Tokens</h2>
+            {Object.entries(walletTokens).map(([key, token]) => {
+              let unit;
+              if (token.policyId === "lovelace") {
+                unit = "lovelace";
+              } else {
+                unit = toUnit(token.policyId, token.tokenName);
+              }
+
+              return (
                 <div
-                  key={index}
-                  className={`mb-4 flex items-center cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
+                  key={key}
+                  className={`mb-4 flex items-start cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
                   onClick={() => handleTokenClick(token.tokenName, token.policyId)}
                 >
                   <Image
                     src={getImageForPolicyId(token.policyId)}
-                    alt={token.tokenName}
-                    width={50}
-                    height={50}
+                    alt={token.policyId === "lovelace" ? "ADA" : (token.policyId === "02ef810a03b1b5c0cfd1b81401bdddd954374284d190563e51add648" ? "Tree Token" : token.tokenName)}
+                    width={100}
+                    height={100}
                     className="mr-2"
                   />
-                  <h1 className="flex-grow">
-                    <span>{token.tokenName}</span>
-                    <span>{"...."}</span>
-                    <span>{token.quantity.toString()}</span>
-                  </h1>
+                  <div>
+                    {token.policyId === "lovelace" ? (
+                      <p><strong>ADA:</strong>
+                        {((Number(token.quantity) / 1000000).toFixed(6))} {/* Convert lovelace to ADA */}
+                      </p>
+                    ) : token.policyId === TREE_TOKEN_POLICY_ID ? (
+                      <p><strong>Tree Token:</strong> {token.quantity.toString()}</p>
+                    ) : (
+                      <>
+                        {/* <p><strong>Policy ID:</strong> {token.policyId}</p>
+                        <p><strong>Token Name:</strong> {token.tokenName}</p> */}
+                        {tokenMetadata[unit] && (
+                          <>
+                            <p><strong>Name:</strong> {tokenMetadata[unit].name}</p>
+                            <p><strong>Number:</strong> {tokenMetadata[unit].number}</p>
+                            <p><strong>Species:</strong> {tokenMetadata[unit].species}</p>
+                            <p><strong>Coordinates:</strong> {tokenMetadata[unit].coordinates}</p>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Token Details Panel */}
-          <div className="w-full sm:w-1/3 p-4 border-l border-gray-300">
-            <h2 className="text-lg font-semibold mb-4 text-center">Token Details</h2>
-            {selectedTokenMetadata && selectedAssetClass ? (
-              <div>
-                <p><strong>Policy ID:</strong> {selectedAssetClass.policyId}</p>
-                <p><strong>Token Name:</strong> {selectedAssetClass.tokenName}</p>
-                <p><strong>Name:</strong> {selectedTokenMetadata.name}</p>
-                <p><strong>Number:</strong> {selectedTokenMetadata.number}</p>
-                <p><strong>Species:</strong> {selectedTokenMetadata.species}</p>
-                <p><strong>Coordinates:</strong> {selectedTokenMetadata.coordinates}</p>
-              </div>
-            ) : (
-              <p className="text-center">No Treeconomy NFT selected</p>
-            )}
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -477,6 +553,18 @@ const Delegate = async () => {
         isOpen={isMintModalOpen}
         onClose={() => setIsMintModalOpen(false)}
         onConfirm={handleMintSeed}
+      />
+      <MintSaplingTreeModal
+        treeType="Sapling"
+        isOpen={isSaplingModalOpen}
+        onClose={() => setIsSaplingModalOpen(false)}
+        onConfirm={handleMintSapling}
+      />
+      <MintSaplingTreeModal
+        treeType="Tree"
+        isOpen={isTreeModalOpen}
+        onClose={() => setIsTreeModalOpen(false)}
+        onConfirm={handleMintTree}
       />
     </>
   );
