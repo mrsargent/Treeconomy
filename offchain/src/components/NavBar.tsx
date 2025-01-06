@@ -21,7 +21,7 @@ export default function NavBar() {
           height={24}
           priority
         />
-        <p className="text-3xl ml-5">Capacitree</p>
+        <p className="text-3xl ml-5">Tree-conomy</p>
        
       </div>
       <Suspense fallback={<div>Loading ... </div>}>

@@ -93,4 +93,3 @@ export const parse = (json: string) =>
       ? BigInt(value.slice(0, -1))
       : value
   );
-

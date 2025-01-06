@@ -14,4 +14,4 @@ Todo list
 -- done 10. implement AI bot on other two mints and not on collect
 -- done 11. add "add image" on modal for mint 
 12. add error handling to rewards script
-13. improve UI token display - perhaps display bigger picture of status of each token. 
+-- done 13. improve UI token display - perhaps display bigger picture of status of each token. 

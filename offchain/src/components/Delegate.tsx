@@ -115,7 +115,7 @@ const Delegate = async () => {
     const metadata: { [key: string]: TreeData } = {};
     for (const token of tokens) {
       // Skip ADA (lovelace)
-      if (token.policyId === "lovelace") continue;
+      if (token.policyId === "lovelace" || token.policyId === TREE_TOKEN_POLICY_ID) continue;
       const unit = toUnit(token.policyId, token.tokenName);
       const response = await fetch("/api/getmetadata", {
         method: "POST",
@@ -327,6 +327,11 @@ const Delegate = async () => {
             body: JSON.stringify(body),
           });
         }
+        if (!response?.ok) {
+          const errorData = await response?.json();
+          throw new Error(errorData.error || 'Failed to process request');
+        }
+
         if (response) {
           const { tx } = await response.json();
           const signedTx = await lucid.fromTx(tx).sign.withWallet().complete();
@@ -345,6 +350,7 @@ const Delegate = async () => {
             setSuccessAlertVisible(true);
           }
         }
+
 
 
       } catch (error) {
@@ -435,13 +441,13 @@ const Delegate = async () => {
   const handleMintSapling = (treeType: string, image: File | null) => {
     console.log('Minting Sapling NFT');
     randomActionFunction("BurnMintSapling");
-    setIsMintModalOpen(false);
+    setIsSaplingModalOpen(false);
   }
 
   const handleMintTree = (treeType: string, image: File | null) => {
     console.log('Minting Tree NFT');
     randomActionFunction("BurnMintTree");
-    setIsMintModalOpen(false);
+    setIsTreeModalOpen(false);
   }
 
 
@@ -460,14 +466,14 @@ const Delegate = async () => {
             </button>
             <button
               className={`btn ${selectedAssetClass?.policyId !== SEED_NFT_POLICY_ID ? 'btn-disabled' : 'btn-primary'}`}
-              onClick={() => randomActionFunction("BurnMintSapling")}
+              onClick={() => setIsSaplingModalOpen(true)}
               disabled={selectedAssetClass?.policyId !== SEED_NFT_POLICY_ID}
             >
               Seed - Sapling
             </button>
             <button
               className={`btn ${selectedAssetClass?.policyId !== SAPLING_NFT_POLICY_ID ? 'btn-disabled' : 'btn-primary'}`}
-              onClick={() => randomActionFunction("BurnMintTree")}
+              onClick={() => setIsTreeModalOpen(true)}
               disabled={selectedAssetClass?.policyId !== SAPLING_NFT_POLICY_ID}
             >
               Sapling - Tree
@@ -486,41 +492,86 @@ const Delegate = async () => {
               Test
             </button> */}
           </div>
-
+{/* 
           <div className="w-full sm:w-1/2 p-4 border-l border-gray-300">
             <h2 className="text-lg font-semibold mb-4 text-center">My Tokens</h2>
-            {Object.entries(walletTokens).map(([key, token]) => {
-              let unit;
-              if (token.policyId === "lovelace") {
-                unit = "lovelace";
-              } else {
-                unit = toUnit(token.policyId, token.tokenName);
-              }
+            <div className="max-h-[120vh] overflow-y-auto"> 
+              {Object.entries(walletTokens).map(([key, token]) => {
+                let unit;
+                if (token.policyId === "lovelace") {
+                  unit = "lovelace";
+                } else {
+                  unit = toUnit(token.policyId, token.tokenName);
+                }
 
-              return (
-                <div
-                  key={key}
-                  className={`mb-4 flex items-start cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
-                  onClick={() => handleTokenClick(token.tokenName, token.policyId)}
-                >
-                  <Image
-                    src={getImageForPolicyId(token.policyId)}
-                    alt={token.policyId === "lovelace" ? "ADA" : (token.policyId === "02ef810a03b1b5c0cfd1b81401bdddd954374284d190563e51add648" ? "Tree Token" : token.tokenName)}
-                    width={100}
-                    height={100}
-                    className="mr-2"
-                  />
-                  <div>
-                    {token.policyId === "lovelace" ? (
-                      <p><strong>ADA:</strong>
-                        {((Number(token.quantity) / 1000000).toFixed(6))} {/* Convert lovelace to ADA */}
-                      </p>
-                    ) : token.policyId === TREE_TOKEN_POLICY_ID ? (
-                      <p><strong>Tree Token:</strong> {token.quantity.toString()}</p>
-                    ) : (
-                      <>
-                        {/* <p><strong>Policy ID:</strong> {token.policyId}</p>
-                        <p><strong>Token Name:</strong> {token.tokenName}</p> */}
+                return (
+                  <div
+                    key={key}
+                    className={`mb-4 flex items-start cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
+                    onClick={() => handleTokenClick(token.tokenName, token.policyId)}
+                  >
+                    <Image
+                      src={getImageForPolicyId(token.policyId)}
+                      alt={token.policyId === "lovelace" ? "ADA" : (token.policyId === "02ef810a03b1b5c0cfd1b81401bdddd954374284d190563e51add648" ? "Tree Token" : token.tokenName)}
+                      width={100}
+                      height={100}
+                      className="mr-2"
+                    />
+                    <div>
+                      {token.policyId === "lovelace" ? (
+                        <p><strong>ADA:</strong>
+                          {((Number(token.quantity) / 1000000).toFixed(6))} 
+                        </p>
+                      ) : token.policyId === TREE_TOKEN_POLICY_ID ? (
+                        <p><strong>Tree Token:</strong> {token.quantity.toString()}</p>
+                      ) : (
+                        <>
+                        
+                          {tokenMetadata[unit] && (
+                            <>
+                              <p><strong>Name:</strong> {tokenMetadata[unit].name}</p>
+                              <p><strong>Number:</strong> {tokenMetadata[unit].number}</p>
+                              <p><strong>Species:</strong> {tokenMetadata[unit].species}</p>
+                              <p><strong>Coordinates:</strong> {tokenMetadata[unit].coordinates}</p>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div> */}
+          {/* Token sections */}
+        <div className="flex flex-wrap">
+          {/* Left Column: My Trees */}
+          <div className="w-full sm:w-1/2 p-4 border-r border-gray-300">
+            <h2 className="text-lg font-semibold mb-4 text-center">My Trees</h2>
+            <div className="max-h-[120vh] overflow-y-auto">
+              {Object.entries(walletTokens).map(([key, token]) => {
+                if ([TREE_NFT_POLICY_ID, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID].includes(token.policyId)) {
+                  let unit;
+                  if (token.policyId === "lovelace") {
+                    unit = "lovelace";
+                  } else {
+                    unit = toUnit(token.policyId, token.tokenName);
+                  }
+
+                  return (
+                    <div
+                      key={key}
+                      className={`mb-4 flex items-start cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
+                      onClick={() => handleTokenClick(token.tokenName, token.policyId)}
+                    >
+                      <Image
+                        src={getImageForPolicyId(token.policyId)}
+                        alt={token.policyId === "lovelace" ? "ADA" : token.tokenName}
+                        width={100}
+                        height={100}
+                        className="mr-2"
+                      />
+                      <div>
                         {tokenMetadata[unit] && (
                           <>
                             <p><strong>Name:</strong> {tokenMetadata[unit].name}</p>
@@ -529,13 +580,67 @@ const Delegate = async () => {
                             <p><strong>Coordinates:</strong> {tokenMetadata[unit].coordinates}</p>
                           </>
                         )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      </div>
+                    </div>
+                  );
+                }
+                return null; // Skip rendering if not a tree token
+              })}
+            </div>
           </div>
+
+          {/* Right Column: My Tokens */}
+          <div className="w-full sm:w-1/2 p-4">
+            <h2 className="text-lg font-semibold mb-4 text-center">My Tokens</h2>
+            <div className="max-h-[120vh] overflow-y-auto">
+              {Object.entries(walletTokens).map(([key, token]) => {
+                if (![TREE_NFT_POLICY_ID, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID].includes(token.policyId)) {
+                  let unit;
+                  if (token.policyId === "lovelace") {
+                    unit = "lovelace";
+                  } else {
+                    unit = toUnit(token.policyId, token.tokenName);
+                  }
+
+                  return (
+                    <div
+                      key={key}
+                      className={`mb-4 flex items-start cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
+                      onClick={() => handleTokenClick(token.tokenName, token.policyId)}
+                    >
+                      <Image
+                        src={getImageForPolicyId(token.policyId)}
+                        alt={token.policyId === "lovelace" ? "ADA" : (token.policyId === TREE_TOKEN_POLICY_ID ? "Tree Token" : token.tokenName)}
+                        width={100}
+                        height={100}
+                        className="mr-2"
+                      />
+                      <div>
+                        {token.policyId === "lovelace" ? (
+                          <p><strong>ADA:</strong> {((Number(token.quantity) / 1000000).toFixed(6))}</p>
+                        ) : token.policyId === TREE_TOKEN_POLICY_ID ? (
+                          <p><strong>Tree Token:</strong> {token.quantity.toString()}</p>
+                        ) : (
+                          <>
+                            {tokenMetadata[unit] && (
+                              <>
+                                <p><strong>Name:</strong> {tokenMetadata[unit].name}</p>
+                                <p><strong>Number:</strong> {tokenMetadata[unit].number}</p>
+                                <p><strong>Species:</strong> {tokenMetadata[unit].species}</p>
+                                <p><strong>Coordinates:</strong> {tokenMetadata[unit].coordinates}</p>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return null; // Skip rendering if it's a tree token
+              })}
+            </div>
+          </div>
+        </div>
         </div>
       ) : null}
       {errorAlertVisible &&
