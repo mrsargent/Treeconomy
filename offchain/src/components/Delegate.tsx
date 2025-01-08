@@ -47,42 +47,7 @@ const Delegate = async () => {
     }
   }, [isConnected]);
 
-  // useEffect(() => {
-  //   if (isConnected) {
-  //     getWalletTokens().then(aggregatedTokens => setWalletTokens(aggregatedTokens));
-  //   }
-  // }, [isConnected]);
-
-  // const getWalletTokens = async (): Promise<Record<string, Token>> => {
-  //   if (isConnected && enabledWallet) {
-  //     try {
-  //       const lucid = await Lucid(new Emulator([]), "Preprod");
-  //       const api = await window.cardano[enabledWallet].enable();
-  //       lucid.selectWallet.fromAPI(api);
-
-  //       const utxos: UTxO[] = await lucid.wallet().getUtxos();
-  //       const tokens: Token[] = [];
-
-  //       for (const utxo of utxos) {
-  //         const assets = utxo.assets;
-  //         for (const [assetId, quantity] of Object.entries(assets)) {
-  //           const { policyId, tokenName } = parseAssetId(assetId);
-  //           tokens.push({
-  //             policyId,
-  //             tokenName,
-  //             quantity: BigInt(quantity)
-  //           });
-  //         }
-  //       }
-  //       return aggregateTokens(tokens);
-  //     } catch (error) {
-  //       console.error("Failed to fetch wallet tokens:", error);
-  //       return {};
-  //     }
-  //   }
-  //   return {};
-  // };
-
+ 
   const getWalletTokens = async () => {
     if (isConnected && enabledWallet) {
       try {
@@ -485,12 +450,12 @@ const Delegate = async () => {
             >
               Collect Rewards
             </button>
-            {/* <button className="btn btn-primary" onClick={() => handleAPI("Burn")}>
+            <button className="btn btn-primary" onClick={() => handleAPI("Burn")}>
               Burn Baby Burn
             </button>
             <button className="btn btn-primary" onClick={() => handleAPI("Test")}>
               Test
-            </button> */}
+            </button>
           </div>
 {/* 
           <div className="w-full sm:w-1/2 p-4 border-l border-gray-300">

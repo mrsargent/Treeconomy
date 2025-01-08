@@ -40,6 +40,10 @@ export type BurnConfig = {
   burnAssetName: string;
 }
 
+export type GoogleConfig = {
+  email:string;
+}
+
 export type Token = {
   policyId: string;
   tokenName: string;

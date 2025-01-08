@@ -22,3 +22,11 @@ model User {
   treeNftName    String?  @unique
   createdAt      DateTime @default(now())
 }
+
+model GoogleUser {
+  id         Int    @id @default(autoincrement())
+  email      String @unique
+  address    String @unique
+  privateKey String @unique
+  pkh        String @unique
+}

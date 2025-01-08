@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anastasia-labs/cardano-multiplatform-lib-nodejs": "6.0.2-3",
     "@cardano-foundation/cardano-connect-with-wallet": "^0.2.9",
     "@cardano-foundation/cardano-connect-with-wallet-core": "^0.2.5",
     "@clerk/nextjs": "^6.9.6",
@@ -27,6 +28,7 @@
     "prisma": "^6.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-icons": "^5.4.0",
     "tailwindcss": "3.4.1",
     "typescript": "5.3.3"
   },
