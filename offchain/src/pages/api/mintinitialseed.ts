@@ -5,7 +5,7 @@ import { getFirstUxtoWithAda } from "./fingUtxoFunctions";
 import scripts from '../../../../onchain/plutus.json';
 import { CIP68Datum, fromAddress, MintRedeemer, RewardsDatum } from "./schemas";
 import { AssetClass, POSIXTime } from "@/Utils/types";
-import { assetNameLabels, ONE_HOUR_MS, TreeToken } from "@/Utils/constants";
+import { assetNameLabels, ONE_HOUR_MS, THIRTY_MIN_MS, TreeToken } from "@/Utils/constants";
 import prisma from "../../../prisma/client";
 import { generateUniqueAssetName } from "@/Utils/Utils";
 
@@ -36,20 +36,20 @@ export default async function handler(
 
     };
 
-    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, lockingValidatorName, species, coordinates }: InitialMintConfig = req.body;
+    const { address, nftMintPolicyName, tokenMintPolicyName, rewardsValidatorName, lockingValidatorName, species, coordinates, isSignedIn }: InitialMintConfig = req.body;
     const lucidAI = await initLucid();
     const lucidUser = await initLucid();
     lucidUser.selectWallet.fromAddress(address, [])
     lucidAI.selectWallet.fromPrivateKey(process.env.AI_PRIVATE_KEY!);
     console.log(address);
-    
+
     const aiAddr = await lucidAI.wallet().address();
     console.log("AI Addr", aiAddr);
 
     // *****************************************************************/
     //*********  constructing NFT minting policy with params ***************/
     //**************************************************************** */   
-    const pkh1 = paymentCredentialOf(aiAddr).hash;   
+    const pkh1 = paymentCredentialOf(aiAddr).hash;
     console.log("AI PKI:  ", pkh1);
     const compiledNft = scripts.validators.find(
       (v) => v.title === nftMintPolicyName,
@@ -79,7 +79,7 @@ export default async function handler(
 
     const mintingTokenPolicyId = mintingPolicyToId(mintingTokenpolicy);
     console.log("policy id: ", mintingTokenPolicyId);
-// *****************************************************************/
+    // *****************************************************************/
     //*********  constructing for ref token that cannot be unlocked*/
     //**************************************************************** */   
 
@@ -112,11 +112,11 @@ export default async function handler(
       const myData = {
         transaction_id: goodUtxo.txHash,
         output_index: BigInt(goodUtxo.outputIndex)
-      }        
-   
-      const userToken = generateUniqueAssetName(goodUtxo, assetNameLabels.prefix222);  
-      const refToken = generateUniqueAssetName(goodUtxo, assetNameLabels.prefix100);      
-     
+      }
+
+      const userToken = generateUniqueAssetName(goodUtxo, assetNameLabels.prefix222);
+      const refToken = generateUniqueAssetName(goodUtxo, assetNameLabels.prefix100);
+
       console.log("user token: ", userToken);
       console.log("ref token: ", refToken);
       // *****************************************************************/
@@ -124,7 +124,7 @@ export default async function handler(
       //**************************************************************** */
       const userCount = await prisma.user.count();
       console.log("User Count: ", userCount);
-      
+
 
       const newTree = await prisma.user.create({
         data: {
@@ -187,11 +187,11 @@ export default async function handler(
       console.log("current time: ", currentTime);
 
       const rewardsDatum = Data.to(
-        {         
+        {
           vestingAsset: vestingAsset,
           totalVestingQty: 10_000n,
           vestingPeriodStart: BigInt(currentTime),
-          vestingPeriodEnd: BigInt(currentTime + ONE_HOUR_MS),
+          vestingPeriodEnd: BigInt(currentTime + THIRTY_MIN_MS),
           firstUnlockPossibleAfter: BigInt(currentTime),
           totalInstallments: 3n,
           treeNumer: BigInt(newTree.treeNumber),
@@ -210,7 +210,7 @@ export default async function handler(
       const refTokenCIP68MetaData = Data.to({
         metadata: metadataMap,
         version: 1n
-      },CIP68Datum);
+      }, CIP68Datum);
 
       // *****************************************************************/
       //*********  constructing transaction ******************************/
@@ -249,17 +249,33 @@ export default async function handler(
           [mintingNFTPolicyId + refToken]: 1n,
         }, refTokenRedeemer)
         .attach.MintingPolicy(mintingTokenpolicy)
-        .attach.MintingPolicy(mintingNFTpolicy)        
-        .addSigner(aiAddr)        
+        .attach.MintingPolicy(mintingNFTpolicy)
+        .addSigner(aiAddr)
         .complete({ localUPLCEval: false });
-       
-        const aiSigned = await lucidAI.fromTx(tx.toCBOR()).partialSign.withPrivateKey(process.env.AI_PRIVATE_KEY!);        
-      
-      res.status(200).json({
-        tx: tx.toCBOR(),
-        aiSigned,
-       
-      });
+
+      const aiSigned = await lucidAI.fromTx(tx.toCBOR()).partialSign.withPrivateKey(process.env.AI_PRIVATE_KEY!);
+
+      if (isSignedIn) {
+        const existingUser = await prisma.googleUser.findUnique({
+          where: {
+            address: address
+          }
+        });
+
+        const userSign = await lucidUser.fromTx(tx.toCBOR()).partialSign.withPrivateKey(existingUser?.privateKey!);
+        const signedTx = await lucidUser.fromTx(tx.toCBOR()).assemble([aiSigned, userSign]).complete();
+        const signedTransaction = await signedTx.submit();
+
+        res.status(200).json({
+          signedTransaction
+        });
+      } else {
+        res.status(200).json({
+          tx: tx.toCBOR(),
+          aiSigned,
+
+        });
+      }
     } else {
       console.log("not good utxo found");
       res.status(401).json({ error: "Couldn't find utxo" });

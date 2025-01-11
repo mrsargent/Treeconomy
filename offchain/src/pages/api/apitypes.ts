@@ -13,6 +13,7 @@ export type InitialMintConfig = {
   lockingValidatorName: string;
   species: string;
   coordinates: string;
+  isSignedIn: boolean;
 };
 
 export type GetTokenDataConfig = {
@@ -23,7 +24,8 @@ export type WithdrawConfig = {
   address: string;
   rewardsValidatorName: string;
   treeNumber: string;
-  assetClass: AssetClass
+  assetClass: AssetClass;
+  isSignedIn: boolean;
 };
 
 export type MintBurnConfig = {
@@ -32,6 +34,7 @@ export type MintBurnConfig = {
   nftMintPolicyName: string;
   treeData: TreeData;
   burnAssetName: string;
+  isSignedIn: boolean;
 }
 
 export type BurnConfig = {
@@ -41,8 +44,9 @@ export type BurnConfig = {
 }
 
 export type GoogleConfig = {
-  email:string;
+  email: string;
 }
+
 
 export type Token = {
   policyId: string;

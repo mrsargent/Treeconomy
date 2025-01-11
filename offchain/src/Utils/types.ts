@@ -19,26 +19,6 @@ export type AssetClass = {
   tokenName: string;
 };
 
-export type LockTokensConfig = {
-  beneficiary: Address;
-  vestingAsset: AssetClass;
-  totalVestingQty: number;
-  vestingPeriodStart: POSIXTime;
-  vestingPeriodEnd: POSIXTime;
-  firstUnlockPossibleAfter: POSIXTime;
-  totalInstallments: number;
-  scripts: {
-    vesting: CborHex;
-  };
-};
-
-export type CollectPartialConfig = {
-  vestingOutRef: OutRef;
-  scripts: {
-    vesting: CborHex;
-  };
-  currentTime?: POSIXTime;
-};
 
 export type ReadableUTxO<T> = {
   outRef: OutRef;
@@ -53,4 +33,26 @@ export type TreeData = {
   species: string,
   image: string,
 }
+
+
+// export type LockTokensConfig = {
+//   beneficiary: Address;
+//   vestingAsset: AssetClass;
+//   totalVestingQty: number;
+//   vestingPeriodStart: POSIXTime;
+//   vestingPeriodEnd: POSIXTime;
+//   firstUnlockPossibleAfter: POSIXTime;
+//   totalInstallments: number;
+//   scripts: {
+//     vesting: CborHex;
+//   };
+// };
+
+// export type CollectPartialConfig = {
+//   vestingOutRef: OutRef;
+//   scripts: {
+//     vesting: CborHex;
+//   };
+//   currentTime?: POSIXTime;
+// };
 

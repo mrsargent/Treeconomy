@@ -7,6 +7,7 @@ import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
 import { TIME_TOLERANCE_MS, TREE_NFT_POLICY_ID } from "@/Utils/constants";
 import { POSIXTime } from "@/Utils/types";
 import { getUtxoByTreeNo } from "./fingUtxoFunctions";
+import prisma from "../../../prisma/client";
 
 
 
@@ -35,7 +36,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, rewardsValidatorName, treeNumber, assetClass }: WithdrawConfig = req.body;
+    const { address, rewardsValidatorName, treeNumber, assetClass,isSignedIn }: WithdrawConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -166,7 +167,25 @@ export default async function handler(
      //     .addSigner(address)
           .complete({ localUPLCEval: false });
 
-        res.status(200).json({ tx: tx.toCBOR() });
+          if (isSignedIn) {
+            const existingUser = await prisma.googleUser.findUnique({
+              where: {
+                address: address
+              }
+            });
+    
+            const signedTx = await lucid.fromTx(tx.toCBOR()).sign.withPrivateKey(existingUser?.privateKey!).complete();
+           
+            const signedTransaction = await signedTx.submit();
+    
+            res.status(200).json({
+              signedTransaction
+            });
+          } else {
+            res.status(200).json({
+              tx: tx.toCBOR()   
+            });
+          }
       } else {
         console.log("Doing partial unlock unlock");
         tx = await lucid
@@ -185,7 +204,11 @@ export default async function handler(
           .validTo(upperBound)
        //   .addSigner(address)
           .complete({ localUPLCEval: false });
-        res.status(200).json({ tx: tx.toCBOR() });
+
+         
+
+
+      
       }
     } catch (error) {
       console.log("transaction error: ", error);

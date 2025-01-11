@@ -33,7 +33,7 @@ export default async function handler(
       }
     };
     
-    const { address, refLockPolicy, nftMintPolicyName, treeData, burnAssetName }: MintBurnConfig = req.body;
+    const { address, refLockPolicy, nftMintPolicyName, treeData, burnAssetName, isSignedIn }: MintBurnConfig = req.body;
     const lucidAI = await initLucid();
     const lucidUser = await initLucid();
     lucidUser.selectWallet.fromAddress(address, [])
@@ -193,10 +193,27 @@ export default async function handler(
 
         const aiSigned = await lucidAI.fromTx(tx.toCBOR()).partialSign.withPrivateKey(process.env.AI_PRIVATE_KEY!);        
       
-        res.status(200).json({
-          tx: tx.toCBOR(),
-          aiSigned,         
-        });
+        if (isSignedIn) {
+          const existingUser = await prisma.googleUser.findUnique({
+            where: {
+              address: address
+            }
+          });
+  
+          const userSign = await lucidUser.fromTx(tx.toCBOR()).partialSign.withPrivateKey(existingUser?.privateKey!);
+          const signedTx = await lucidUser.fromTx(tx.toCBOR()).assemble([aiSigned, userSign]).complete();
+          const signedTransaction = await signedTx.submit();
+  
+          res.status(200).json({
+            signedTransaction
+          });
+        } else {
+          res.status(200).json({
+            tx: tx.toCBOR(),
+            aiSigned,
+  
+          });
+        }
     } else {
       console.log("not good utxo found");
       res.status(401).json({ error: "Couldn't find utxo" });

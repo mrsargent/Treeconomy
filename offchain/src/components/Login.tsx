@@ -1,30 +1,32 @@
+'use client'
 import React, { useEffect, useState } from 'react'
 import {
     SignInButton,
+    SignOutButton,
     SignedIn,
     SignedOut,
     UserButton,
     useUser
 } from '@clerk/nextjs'
-import { PrismaClient } from '@prisma/client';
-import { credentialToAddress, Emulator, generatePrivateKey, keyHashToCredential, Lucid, PrivateKey, toPublicKey } from '@lucid-evolution/lucid';
-import * as CML from '@anastasia-labs/cardano-multiplatform-lib-nodejs';
-import { FcGoogle } from 'react-icons/fc'; 
+import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from './AuthContext';
 
 interface LoginProps {
     onSignInStatusChange: (isSignedIn: boolean) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
-    const { isLoaded, isSignedIn, user } = useUser();
-    const prisma = new PrismaClient();
+    const { isLoaded, isSignedIn: clerkIsSignedIn, user } = useUser();
+    const { isSignedIn, email, address, setSignInStatus } = useAuth();
+
+
     const [userAddress, setUserAddress] = useState<string | null>(null); // Changed to string | null
 
     useEffect(() => {
         if (isLoaded) {
-            onSignInStatusChange(isSignedIn);
+            onSignInStatusChange(clerkIsSignedIn);
 
-            if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
+            if (clerkIsSignedIn && user?.primaryEmailAddress?.emailAddress) {
                 const email = user.primaryEmailAddress.emailAddress;
 
                 fetch('/api/generate_google_user', {
@@ -38,9 +40,12 @@ const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
                     .then(data => {
                         if ('addr' in data && typeof data.addr === 'string') {
                             setUserAddress(data.addr);
+                            setSignInStatus(true, email, data.addr);
                         } else {
                             // Handle error or no address found
                             console.error('Failed to fetch address:', data.error);
+                            // Update context with new sign-in status, email, and address
+
                         }
                     })
                     .catch(error => {
@@ -49,17 +54,28 @@ const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
 
             }
         }
-    }, [isLoaded, isSignedIn, user, onSignInStatusChange]);
+    }, [isLoaded, clerkIsSignedIn, user, onSignInStatusChange]);
 
     const userEmail = user?.primaryEmailAddress?.emailAddress;
+
+    const handleLogout = () => {
+        // try {
+           console.log("handl log out");
+            setSignInStatus(false, "", "");
+            onSignInStatusChange(false);
+        // } catch (error) {
+        //     console.error('Logout failed:', error);
+        // }
+    };
+
 
     return (
         <>
             <SignedOut>
-            <button className="btn btn-primary">
+                <button className="btn btn-ghost">
                     <SignInButton>
                         <span className="flex items-center">
-                            <FcGoogle className="mr-2" /> {/* Google Icon */}
+                            <FcGoogle className="mr-2" /> 
                             Log In
                         </span>
                     </SignInButton>
@@ -67,20 +83,20 @@ const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
             </SignedOut>
             <SignedIn>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '10px' }}>
-                    {userAddress === undefined ? " " : userAddress?.slice(0, 10)}
-                    {"..."}
-                    {userAddress === undefined ? " " : userAddress?.slice(userAddress.length - 6)}
-                </span>
-                <UserButton
-                    appearance={{
-                        elements: {
-                            userButton: "btn btn-primary",
-                            userButtonTrigger: "btn btn-primary",
-                            userButtonPopoverFooter: "btn btn-primary",
-                        }
-                    }}
-                />
+                    <span style={{ marginRight: '10px' }}>
+                        {userAddress === undefined ? " " : userAddress?.slice(0, 10)}
+                        {"..."}
+                        {userAddress === undefined ? " " : userAddress?.slice(userAddress.length - 6)}
+                    </span>
+                    <SignOutButton>
+                    <button className='btn btn-ghost' onClick={() => setSignInStatus(false, "", "")}>
+                            <span className="flex items-center">
+                                <FcGoogle className="mr-2" /> 
+                                Sign Out
+                            </span>
+                        </button>
+                    </SignOutButton>
+                 
                 </div>
             </SignedIn>
         </>

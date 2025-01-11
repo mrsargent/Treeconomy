@@ -21,7 +21,7 @@ const WalletConnect2 = () => {
             {"..."}
             {usedAddresses[0] === undefined ? " " : usedAddresses[0]!.slice(usedAddresses[0]!.length - 6)}
           </h1>        
-          <h1>{accountBalance}</h1>
+          {/* <h1>{accountBalance}</h1> */}
          
           <button
             className="btn btn-square btn-outline"
