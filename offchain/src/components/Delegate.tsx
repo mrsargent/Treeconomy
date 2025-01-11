@@ -7,15 +7,16 @@ import {
   toUnit,
   UTxO
 } from "@lucid-evolution/lucid";
-import { aggregateTokens, BurnConfig, GetTokenDataConfig, InitialMintConfig, MintBurnConfig, parseAssetId, Token, WithdrawConfig } from "../pages/api/apitypes";
+import { BurnConfig, GetTokenDataConfig, InitialMintConfig, MintBurnConfig, WithdrawConfig } from "../pages/api/apitypes";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { AssetClass, TransactionType, TreeData } from "@/Utils/types";
+import { AssetClass, Token, TransactionType, TreeData } from "@/Utils/types";
 import { ADA_POLICY_ID, LOCKING_CONTRACT, NFT_MINT_POLICY, REWARDS_VALIDATOR, SAPLING_NFT_POLICY_ID, SEED_NFT_POLICY_ID, TOKEN_MINT_POLICY, TREE_NFT_POLICY_ID, TREE_TOKEN_POLICY_ID } from "@/Utils/constants";
 import ErrorAlert from "./alerts/ErrorAlert";
 import SuccessAlert, { SuccessAlertProps } from "./alerts/SuccessAlert";
 import MintSeedModal from "./modals/MintSeedModal";
 import MintSaplingTreeModal from "./modals/MintSaplingTreeModal";
+import { aggregateTokens, parseAssetId } from "@/Utils/Utils";
 
 
 interface DelegateProps {

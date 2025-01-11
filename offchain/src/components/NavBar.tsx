@@ -12,15 +12,8 @@ const WalletConnect = dynamic(() => import("./WalletConnect"), {
 
 export default function NavBar() {
   const [isUserSignedIn, setIsUserSignedIn] = useState<boolean>(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  // const network =
-  //   process.env.NODE_ENV === "development"
-  //     ? NetworkType.TESTNET
-  //     : NetworkType.MAINNET;
-  // const { isConnected } = useCardano({
-  //   limitNetwork: network,
-  // });
-  
   return (
     // <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
     <div className="flex flex-wrap w-full max-w-5xl items-center justify-between font-mono text-sm">
@@ -40,10 +33,10 @@ export default function NavBar() {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <span style={{ marginRight: '10px' }}>
           <Suspense fallback={<div>Loading ... </div>}>
-            {!isUserSignedIn && <WalletConnect />}
+            {!isUserSignedIn && <WalletConnect onConnectionStatusChange={setIsConnected} />}
           </Suspense>
         </span>
-         {<Clerkcomp onSignInStatusChange={setIsUserSignedIn} />}
+         {!isConnected && <Clerkcomp onSignInStatusChange={setIsUserSignedIn} />}
       </div>
     </div>
   );

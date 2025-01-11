@@ -1,6 +1,7 @@
+import { Token } from "@/Utils/types";
+import { aggregateTokens, parseAssetId } from "@/Utils/Utils";
 import { Blockfrost, Lucid, Kupmios, UTxO } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import { aggregateTokens, parseAssetId, Token } from "./apitypes";
 
 
 export default async function handler(

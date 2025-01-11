@@ -2,27 +2,38 @@
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import WalletModal from "./WalletModal";
+import CopyableAddress from "./alerts/CopyAddress";
+import { useEffect } from "react";
 
-const WalletConnect2 = () => {
+interface WalletConnectProps {
+  onConnectionStatusChange: (isConnected: boolean) => void;
+}
+
+const WalletConnect2: React.FC<WalletConnectProps> = ({ onConnectionStatusChange }) => {
   const network =
     process.env.NODE_ENV === "development"
       ? NetworkType.TESTNET
       : NetworkType.MAINNET;
   const { isConnected, enabledWallet, stakeAddress, usedAddresses, disconnect, accountBalance } = useCardano({
     limitNetwork: network,
-  });  
+  });
+
+  useEffect(() => {
+    onConnectionStatusChange(isConnected);
+  }, [isConnected, onConnectionStatusChange]);
 
   return (
     <div className="flex items-center gap-3 sm:gap-6 lg:gap-8">
       {isConnected ? (
         <div className="flex items-center gap-3 sm:gap-6 lg:gap-8">
-          <h1>          
-            {usedAddresses[0] === undefined ? " " : usedAddresses[0]!.slice(0, 10)}
-            {"..."}
-            {usedAddresses[0] === undefined ? " " : usedAddresses[0]!.slice(usedAddresses[0]!.length - 6)}
-          </h1>        
-          {/* <h1>{accountBalance}</h1> */}
-         
+          <CopyableAddress text={usedAddresses[0] || ""}>
+            <h1>
+              {usedAddresses[0] === undefined ? " " : usedAddresses[0]!.slice(0, 10)}
+              {"..."}
+              {usedAddresses[0] === undefined ? " " : usedAddresses[0]!.slice(usedAddresses[0]!.length - 6)}
+            </h1>
+          </CopyableAddress>
+
           <button
             className="btn btn-square btn-outline"
             onClick={() => {
@@ -44,6 +55,7 @@ const WalletConnect2 = () => {
               />
             </svg>
           </button>
+
         </div>
       ) : (
         <></>

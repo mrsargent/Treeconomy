@@ -1,6 +1,6 @@
 import { Address, Data, fromText, LucidEvolution, UTxO } from "@lucid-evolution/lucid";
 import { CIP68Datum, RewardsDatum } from "./schemas";
-import { parseAssetId } from "./apitypes";
+import { parseAssetId } from "@/Utils/Utils";
 
 
 //find utxo where value of utxo is greater than 3ada

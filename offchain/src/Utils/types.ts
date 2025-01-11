@@ -35,6 +35,12 @@ export type TreeData = {
 }
 
 
+export type Token = {
+  policyId: string;
+  tokenName: string;
+  quantity: bigint;
+}
+
 // export type LockTokensConfig = {
 //   beneficiary: Address;
 //   vestingAsset: AssetClass;

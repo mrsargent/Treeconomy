@@ -5,11 +5,11 @@ import {
     SignOutButton,
     SignedIn,
     SignedOut,
-    UserButton,
     useUser
 } from '@clerk/nextjs'
 import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from './AuthContext';
+import CopyableAddress from './alerts/CopyAddress';
 
 interface LoginProps {
     onSignInStatusChange: (isSignedIn: boolean) => void;
@@ -18,9 +18,9 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
     const { isLoaded, isSignedIn: clerkIsSignedIn, user } = useUser();
     const { isSignedIn, email, address, setSignInStatus } = useAuth();
-
-
     const [userAddress, setUserAddress] = useState<string | null>(null); // Changed to string | null
+
+
 
     useEffect(() => {
         if (isLoaded) {
@@ -60,9 +60,9 @@ const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
 
     const handleLogout = () => {
         // try {
-           console.log("handl log out");
-            setSignInStatus(false, "", "");
-            onSignInStatusChange(false);
+        console.log("handl log out");
+        setSignInStatus(false, "", "");
+        onSignInStatusChange(false);
         // } catch (error) {
         //     console.error('Logout failed:', error);
         // }
@@ -75,7 +75,7 @@ const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
                 <button className="btn btn-ghost">
                     <SignInButton>
                         <span className="flex items-center">
-                            <FcGoogle className="mr-2" /> 
+                            <FcGoogle className="mr-2" />
                             Log In
                         </span>
                     </SignInButton>
@@ -83,20 +83,22 @@ const Login: React.FC<LoginProps> = ({ onSignInStatusChange }) => {
             </SignedOut>
             <SignedIn>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '10px' }}>
-                        {userAddress === undefined ? " " : userAddress?.slice(0, 10)}
-                        {"..."}
-                        {userAddress === undefined ? " " : userAddress?.slice(userAddress.length - 6)}
-                    </span>
+                    <CopyableAddress text={userAddress || ""}>
+                        <span>
+                            {userAddress === undefined ? " " : userAddress?.slice(0, 10)}
+                            {"..."}
+                            {userAddress === undefined ? " " : userAddress?.slice(userAddress.length - 6)}
+                        </span>
+                    </CopyableAddress>
                     <SignOutButton>
-                    <button className='btn btn-ghost' onClick={() => setSignInStatus(false, "", "")}>
+                        <button className='btn btn-ghost' onClick={() => setSignInStatus(false, "", "")}>
                             <span className="flex items-center">
-                                <FcGoogle className="mr-2" /> 
+                                <FcGoogle className="mr-2" />
                                 Sign Out
                             </span>
                         </button>
                     </SignOutButton>
-                 
+
                 </div>
             </SignedIn>
         </>

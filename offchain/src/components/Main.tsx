@@ -1,7 +1,5 @@
 "use client";
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
-import Delegate from "./Delegate";
 import { useAuth } from "./AuthContext";
 const Stake = dynamic(() => import("./Delegate"), { ssr: false });
 
