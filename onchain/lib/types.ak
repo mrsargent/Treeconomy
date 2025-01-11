@@ -1,4 +1,3 @@
-use cardano/address.{Address}
 use cardano/assets.{AssetName, PolicyId}
 use cardano/transaction.{OutputReference}
 
@@ -16,16 +15,6 @@ pub type AssetClass {
 //******************************************
 //********* rewards validator types ********
 //******************************************
-pub type VestingDatum {
-  beneficiary: Address,
-  vestingAsset: AssetClass,
-  totalVestingQty: Int,
-  vestingPeriodStart: Int,
-  vestingPeriodEnd: Int,
-  firstUnlockPossibleAfter: Int,
-  totalInstallments: Int,
-}
-
 pub type Rewards_Datum {
   vestingAsset: AssetClass,
   totalVestingQty: Int,
@@ -39,11 +28,6 @@ pub type Rewards_Datum {
 pub type VestingRedeemer {
   PartialUnlock
   FullUnlock
-}
-
-pub type Rewards_Redeemer {
-  Partial_Unlock
-  Full_Unlock
 }
 
 //******************************************
