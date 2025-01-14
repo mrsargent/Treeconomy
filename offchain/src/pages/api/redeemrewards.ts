@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { WithdrawConfig } from "./apitypes";
 import scripts from '../../../../onchain/plutus.json';
 import { RewardsDatum, VestingRedeemer } from "./schemas";
-import { divCeil, parseSafeDatum, toAddress } from "@/Utils/Utils";
+import { claimTokens, divCeil, parseSafeDatum, toAddress, WithdrawalInfo } from "@/Utils/Utils";
 import { TIME_TOLERANCE_MS, TREE_NFT_POLICY_ID } from "@/Utils/constants";
 import { POSIXTime } from "@/Utils/types";
 import { getUtxoByTreeNo } from "./fingUtxoFunctions";
@@ -20,14 +20,14 @@ export default async function handler(
     //*********  establish network and wallet connection ***************/
     //**************************************************************** */
     const initLucid = async () => {
-      if (process.env.NODE_ENV === "development") { 
-        const b =  new Kupmios(
+      if (process.env.NODE_ENV === "development") {
+        const b = new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
-        );     
+        );
         return Lucid(b, "Preprod");
       } else {
-        const b =  new Kupmios(
+        const b = new Kupmios(
           process.env.KUPO_ENDPOINT_PREPROD!,
           process.env.OGMIOS_ENDPOINT_PREPROD!
         );
@@ -36,7 +36,7 @@ export default async function handler(
 
     };
     const lucid = await initLucid();
-    const { address, rewardsValidatorName, treeNumber, assetClass,isSignedIn }: WithdrawConfig = req.body;
+    const { address, rewardsValidatorName, treeNumber, assetClass, isSignedIn }: WithdrawConfig = req.body;
     console.log(address);
     lucid.selectWallet.fromAddress(address, [])
 
@@ -63,37 +63,40 @@ export default async function handler(
     console.log("contract address: ", contractAddr);
 
     const currentTime: POSIXTime = Date.now();
-    console.log("current time: ",currentTime);
-    
-    
+    console.log("current time: ", currentTime);
+
+
     // *****************************************************************/
     //*********  construct stuff ***************/
     //**************************************************************** */
 
-    const vestingUTXO: UTxO | undefined = await getUtxoByTreeNo(lucid,contractAddr,parseInt(treeNumber));
-    console.log("Tree utxo hash: ", vestingUTXO?.txHash, " index: ",vestingUTXO?.outputIndex);
+    const vestingUTXO: UTxO | undefined = await getUtxoByTreeNo(lucid, contractAddr, parseInt(treeNumber));
+    console.log("Tree utxo hash: ", vestingUTXO?.txHash, " index: ", vestingUTXO?.outputIndex);
 
     if (assetClass.policyId !== TREE_NFT_POLICY_ID) {
       console.log("TREE NFT not selected");
-      return { type: "error", error: new Error("No Tree NFT selected") };
+      res.status(400).json({ type: "error", error: "TREE NFT not selected" });
+      return 
     }
 
-    if (!vestingUTXO){
+    if (!vestingUTXO) {
       console.log("no utxo in script");
-      return { type: "error", error: new Error("No Utxo in Script") };
-    }
+      res.status(400).json({ type: "error", error: "Nothing more to claim" });
+      return 
      
+    }
 
-    if (!vestingUTXO.datum){
+
+    if (!vestingUTXO.datum) {
       console.log("missing datum");
       return { type: "error", error: new Error("Missing Datum") };
     }
-      
+
 
     const datum = parseSafeDatum(vestingUTXO.datum, RewardsDatum);
-    if (datum.type == "left")
+    if (datum.type == "left"){
       return { type: "error", error: new Error(datum.value) };
-
+    }
 
     console.log("vesting period end: ", datum.value.vestingPeriodEnd);
     const vestingPeriodLength =
@@ -131,10 +134,27 @@ export default async function handler(
         ? vestingUTXO.assets[vestingTokenUnit]
         : vestingUTXO.assets[vestingTokenUnit] - expectedRemainingQty;
     console.log("vestingTokenAmount", vestingTokenAmount);
-    console.log("vestingUTXO.assets[vestingTokenUnit]: ",vestingUTXO.assets[vestingTokenUnit]);
+    console.log("vestingUTXO.assets[vestingTokenUnit]: ", vestingUTXO.assets[vestingTokenUnit]);
 
-    // const beneficiaryAddress = toAddress(datum.value.beneficiary, "Preprod");
-    // console.log("Beneficiary Address: ", beneficiaryAddress);
+    const existingTree = await prisma.user.findUnique({
+      where: {
+        treeNumber: parseInt(treeNumber)
+      }
+    });
+
+    const withDrawInfo: WithdrawalInfo = claimTokens(
+      datum.value.vestingPeriodStart,
+      datum.value.vestingPeriodEnd,
+      BigInt(currentTime),
+      datum.value.totalInstallments,
+      BigInt(existingTree?.numOfClaims!)
+    );
+
+    if (!withDrawInfo.canWithdraw){    
+        console.log("Not time to claim");
+        res.status(400).json({ type: "error", error: "Not time to claim" });     
+      return;
+    }
 
     const rewardsRedeemer =
       vestingTimeRemaining < 0n
@@ -158,38 +178,43 @@ export default async function handler(
           .collectFrom([vestingUTXO], rewardsRedeemer)
           .attach.SpendingValidator(rewardsValidator)
           .pay.ToAddress(address,
-            
+
             {
               [vestingTokenUnit]: vestingTokenAmount,
             })
           .validFrom(lowerBound)
           .validTo(upperBound)
-     //     .addSigner(address)
           .complete({ localUPLCEval: false });
 
-          if (isSignedIn) {
-            const existingUser = await prisma.googleUser.findUnique({
-              where: {
-                address: address
-              }
-            });
-    
-            const signedTx = await lucid.fromTx(tx.toCBOR()).sign.withPrivateKey(existingUser?.privateKey!).complete();
-           
-            const signedTransaction = await signedTx.submit();
-    
-            res.status(200).json({
-              signedTransaction
-            });
-          } else {
-            res.status(200).json({
-              tx: tx.toCBOR()   
-            });
-          }
+          const updateTree = await prisma.user.update({
+            where: { treeNumber: parseInt(treeNumber) },
+            data: {
+              numOfClaims: Number(withDrawInfo.updatedTimesClaimed)
+            }
+          });
+
+        if (isSignedIn) {
+          const existingUser = await prisma.googleUser.findUnique({
+            where: {
+              address: address
+            }
+          });
+
+          const signedTx = await lucid.fromTx(tx.toCBOR()).sign.withPrivateKey(existingUser?.privateKey!).complete();
+          const signedTransaction = await signedTx.submit();       
+
+          res.status(200).json({
+            signedTransaction
+          });
+        } else {
+          res.status(200).json({
+            tx: tx.toCBOR()
+          });
+        }
       } else {
         console.log("Doing partial unlock unlock");
         tx = await lucid
-          .newTx()        
+          .newTx()
           .collectFrom([vestingUTXO], rewardsRedeemer)
           .attach.SpendingValidator(rewardsValidator)
           .pay.ToAddress(address, {
@@ -199,16 +224,40 @@ export default async function handler(
             contractAddr,
             { kind: "inline", value: Data.to(datum.value, RewardsDatum) },
             { [vestingTokenUnit]: expectedRemainingQty }
-          )          
+          )
           .validFrom(lowerBound)
           .validTo(upperBound)
-       //   .addSigner(address)
           .complete({ localUPLCEval: false });
 
-         
+          const updateTree = await prisma.user.update({
+            where: { treeNumber: parseInt(treeNumber) },
+            data: {
+              numOfClaims: Number(withDrawInfo.updatedTimesClaimed)
+            }
+          });
+
+        if (isSignedIn) {
+          const existingUser = await prisma.googleUser.findUnique({
+            where: {
+              address: address
+            }
+          });
+
+          const signedTx = await lucid.fromTx(tx.toCBOR()).sign.withPrivateKey(existingUser?.privateKey!).complete();
+
+          const signedTransaction = await signedTx.submit();
+        
+          res.status(200).json({
+            signedTransaction
+          });
+        } else {
+          res.status(200).json({
+            tx: tx.toCBOR()
+          });
+        }
 
 
-      
+
       }
     } catch (error) {
       console.log("transaction error: ", error);

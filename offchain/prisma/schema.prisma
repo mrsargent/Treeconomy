@@ -17,10 +17,11 @@ model User {
   id             Int      @id @default(autoincrement())
   treeNumber     Int      @unique
   species        String
-  seedNftName    String   @unique
+  seedNftName    String?  @unique
   saplingNftName String?  @unique
   treeNftName    String?  @unique
   createdAt      DateTime @default(now())
+  numOfClaims    Int      @default(0)
 }
 
 model GoogleUser {

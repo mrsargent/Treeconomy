@@ -130,7 +130,7 @@ export default async function handler(
         data: {
           treeNumber: userCount + 1,
           species: species,
-          seedNftName: userToken,
+          seedNftName: null,
           saplingNftName: null,
           treeNftName: null,
           createdAt: new Date

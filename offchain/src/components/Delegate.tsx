@@ -298,6 +298,7 @@ const Delegate: React.FC<DelegateProps> = async ({ isSignedIn, email, address })
             setSuccessAlertVisible(true);
           }
         }
+       
 
 
       } catch (error) {
@@ -368,6 +369,7 @@ const Delegate: React.FC<DelegateProps> = async ({ isSignedIn, email, address })
         if (!response?.ok) {
           const errorData = await response?.json();
           throw new Error(errorData.error || 'Failed to process request');
+         
         }
 
         if (response) {
@@ -541,57 +543,7 @@ const Delegate: React.FC<DelegateProps> = async ({ isSignedIn, email, address })
               Test
             </button> */}
           </div>
-          {/* 
-          <div className="w-full sm:w-1/2 p-4 border-l border-gray-300">
-            <h2 className="text-lg font-semibold mb-4 text-center">My Tokens</h2>
-            <div className="max-h-[120vh] overflow-y-auto"> 
-              {Object.entries(walletTokens).map(([key, token]) => {
-                let unit;
-                if (token.policyId === "lovelace") {
-                  unit = "lovelace";
-                } else {
-                  unit = toUnit(token.policyId, token.tokenName);
-                }
-
-                return (
-                  <div
-                    key={key}
-                    className={`mb-4 flex items-start cursor-pointer ${selectedAssetClass?.tokenName === token.tokenName ? 'bg-blue-200' : ''}`}
-                    onClick={() => handleTokenClick(token.tokenName, token.policyId)}
-                  >
-                    <Image
-                      src={getImageForPolicyId(token.policyId)}
-                      alt={token.policyId === "lovelace" ? "ADA" : (token.policyId === "02ef810a03b1b5c0cfd1b81401bdddd954374284d190563e51add648" ? "Tree Token" : token.tokenName)}
-                      width={100}
-                      height={100}
-                      className="mr-2"
-                    />
-                    <div>
-                      {token.policyId === "lovelace" ? (
-                        <p><strong>ADA:</strong>
-                          {((Number(token.quantity) / 1000000).toFixed(6))} 
-                        </p>
-                      ) : token.policyId === TREE_TOKEN_POLICY_ID ? (
-                        <p><strong>Tree Token:</strong> {token.quantity.toString()}</p>
-                      ) : (
-                        <>
-                        
-                          {tokenMetadata[unit] && (
-                            <>
-                              <p><strong>Name:</strong> {tokenMetadata[unit].name}</p>
-                              <p><strong>Number:</strong> {tokenMetadata[unit].number}</p>
-                              <p><strong>Species:</strong> {tokenMetadata[unit].species}</p>
-                              <p><strong>Coordinates:</strong> {tokenMetadata[unit].coordinates}</p>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div> */}
+      
           {/* Token sections */}
           <div className="flex flex-wrap">
             {/* Left Column: My Trees */}
