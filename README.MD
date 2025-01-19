@@ -21,15 +21,15 @@ By embedding visibility and verification into the process—from seed to tree—
 
 Forest-restoration-logistics are inefficient or do not exist at all, do not scale well, making the resulting restoration projects lack the required investment-grade measurability, immutability, and verifiability required for carbon markets. 
 
-    • No carbon marketplace lets participants place a single planted tree in service, creating a gap in incentives for tree plantings by individuals. 
-    • Nurseries and other tree growers don’t have an easy way of identifying what is being planted in projects and what is being collected in order to create a better just-in-time-tree-production process. 
-    • Funders and environmental scientists do not have quality data and it’s hard to track seed collection sites/locations/stocks and give credit to volunteers, or discover valuable insights to expand production.
-    • It’s hard to know which seeds end up becoming saplings and where they are being stored, limiting efforts to ensure appropriate species composition and diversity for project sites.
-    • It’s hard for project funders and owners to verify that plantings have regionally appropriate tree species in the correct composition for the local ecosystem, potentially limiting the ecosystem benefits from forest restoration logistics. 
-    • Funders do not have a complete record of the different types of trees are planted over time and their specific locations. 
-    • Measurement and verification by all interested stakeholders is hampered by limited ability to verify if a tree is still there later, making assessment of, and rewards for environmental benefits due to planting difficult. 
-    • People are not recognized for their volunteer activity, funders don’t have long-term tracking of outcomes, and nurseries can’t incentivize high-quality seed collection to help identify which stock is needed before projects start. 
-    • Some individual projects do track tree growth, but each project follows its own method, and the type and quality of data vary greatly. Much of this data is not independently verified and only spans the first few years of the project (before the trees fully mature). This project would enable high quality, tree specific, tracking. 
+- No carbon marketplace lets participants place a single planted tree in service, creating a gap in incentives for tree plantings by individuals. 
+- Nurseries and other tree growers don’t have an easy way of identifying what is being planted in projects and what is being collected in order to create a better just-in-time-tree-production process. 
+- Funders and environmental scientists do not have quality data and it’s hard to track seed collection sites/locations/stocks and give credit to volunteers, or discover valuable insights to expand production.
+- It’s hard to know which seeds end up becoming saplings and where they are being stored, limiting efforts to ensure appropriate species composition and diversity for project sites.
+- It’s hard for project funders and owners to verify that plantings have regionally appropriate tree species in the correct composition for the local ecosystem, potentially limiting the ecosystem benefits from forest restoration logistics. 
+- Funders do not have a complete record of the different types of trees are planted over time and their specific locations. 
+- Measurement and verification by all interested stakeholders is hampered by limited ability to verify if a tree is still there later, making assessment of, and rewards for environmental benefits due to planting difficult. 
+- People are not recognized for their volunteer activity, funders don’t have long-term tracking of outcomes, and nurseries can’t incentivize high-quality seed collection to help identify which stock is needed before projects start. 
+- Some individual projects do track tree growth, but each project follows its own method, and the type and quality of data vary greatly. Much of this data is not independently verified and only spans the first few years of the project (before the trees fully mature). This project would enable high quality, tree specific, tracking. 
 
 ## Solution and Vision: Tree-conomy and Tree Token System 
 The Tree-conomy and Tree Token system we are proposing will be specifically configured and designed to enable forest-supply chain logistics, improving the current states of participation, measurement, and verification for forest restoration projects. 
