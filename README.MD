@@ -20,6 +20,7 @@ By embedding visibility and verification into the process—from seed to tree—
 ## Problem Statement
 
 Forest-restoration-logistics are inefficient or do not exist at all, do not scale well, making the resulting restoration projects lack the required investment-grade measurability, immutability, and verifiability required for carbon markets. 
+
     • No carbon marketplace lets participants place a single planted tree in service, creating a gap in incentives for tree plantings by individuals. 
     • Nurseries and other tree growers don’t have an easy way of identifying what is being planted in projects and what is being collected in order to create a better just-in-time-tree-production process. 
     • Funders and environmental scientists do not have quality data and it’s hard to track seed collection sites/locations/stocks and give credit to volunteers, or discover valuable insights to expand production.
